@@ -1,5 +1,3 @@
-from django.test import TestCase
-
 from django import template
 
 register = template.Library()

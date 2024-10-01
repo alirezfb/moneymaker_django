@@ -1,9 +1,7 @@
 from django.contrib import admin
-from .models import Venue
-from .models import MoneymakerUser
-from .models import Event
+from .models import Venue, MoneymakerUser, Event
 
-admin.site.register(Venue)
+"""admin.site.register(Venue)
 admin.site.register(MoneymakerUser)
-admin.site.register(Event)
+admin.site.register(Event)"""
 

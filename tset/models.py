@@ -11,7 +11,22 @@ class Venue(models.Model):
 
     def __str__(self):
         return self.name
+class best_limits_2(models.Model):
+    class Jooz:
+        managed = False  # remove this line
+        db_table = 'nmd46348559193224090'
 
+class best_limits(models.Model):
+    title = models.CharField(max_length=100)
+    content = models.TextField()
+
+    def save(self, *args, **kwargs):
+        # Save the article using the 'db_write' database
+        super().save(*args, **kwargs)
+
+    def get_related_articles(self):
+        # Perform a read query on the 'db_read' database
+        return best_limits.objects.using('db_read')
 
 class MoneymakerUser(models.Model):
     first_name = models.CharField(max_length=30)

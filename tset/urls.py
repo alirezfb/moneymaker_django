@@ -8,5 +8,6 @@ urlpatterns = [
 
     path('', views.home, name="home"),
     path('<int:year>/<str:month>/', views.home, name="home"),
-    path('events', views.all_events, name="list_events")
+    path('events', views.all_events, name="list_events"),
+    path('best', views.close_best, name="close_best_3"),
 ]
