@@ -31,5 +31,5 @@ class Event(models.Model):
     description = models.TextField(blank=True)
     attendees = models.ManyToManyField(MoneymakerUser, blank=True)
 
-    def __str(self):
+    def __str__(self):
         return self.name

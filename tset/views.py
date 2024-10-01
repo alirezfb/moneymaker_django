@@ -2,7 +2,13 @@ from django.shortcuts import render
 import calendar
 from calendar import HTMLCalendar
 from datetime import datetime
+from .models import Event
 
+
+def all_events(request):
+    event_list = Event.objects.all()
+    return render(request, 'tset/event_list.html',
+                  {'event_list': event_list})
 
 def home(request, year=datetime.now().year, month=datetime.now().strftime('%B')):
     name = "John"
