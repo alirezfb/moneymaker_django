@@ -10,14 +10,14 @@ from typing import List, Any
 import requests
 import json
 import io
-import tse_time as tse_time
-import my_sql
+from . import tse_time
+from . import my_sql
 from time import sleep
 import sys
 from urllib.request import urlopen, Request
 #import pytse_client as tse
 import random
-import tse_analize
+from . import tse_analize
 import pandas as pd
 import numpy as np
 

@@ -393,43 +393,57 @@ class calculate_pd:
 def list_return(index_list, definition):
     result_list = []
     for index in index_list:
-        obj = scripts(index=index, only_status=True)
+        obj = scripts(index=index, only_status=False, df_return=True)
         func = "scripts." + definition + "(self)"
         res = getattr(obj, definition)()
-        if res is True:
-            result_list.append(index)
+        if len(res.index) > 0:
+            res['index'] = str(index)
+            res['name'] = my_sql.search.names(index)
+            result_list.append(res)
             pass
         else:
             continue
         pass
-    return result_list
+    return_df = result_list[0]
+    del result_list[0]
+    for df in result_list:
+        return_df = pd.concat([return_df, df], axis=0, ignore_index=True)
+    return return_df
 
 
 class scripts:
-    def __init__(self, index=0, only_status=False, index_list=None):
+    def __init__(self, index=0, only_status=False, index_list=None, df_return=True):
         self.name = "nmd" + str(index)
         self.client_objects = ("buy_I_Volume, buy_N_Volume, buy_CountI, "
                                "buy_CountN, sell_I_Volume, sell_N_Volume, "
                                "sell_CountI, sell_CountN")
         self.closing_objects = ""
-        self.best_limits_objects = ("number, qTitMeDem, zOrdMeDem, "
+        self.best_limits_objects = ("datetime, number, qTitMeDem, zOrdMeDem, "
                                     "pMeDem, pMeOf, zOrdMeOf, qTitMeOf")
         self.day = tse_time.today_str(history=False)
         self.time = tse_time.current_time_str()[:3]
-        self.sql_write = my_sql.search.script
+        self.sql_search = my_sql.search.script
         self.schema = my_sql.schemas
         self.only_status = only_status
         self.index_list = index_list
+        self.df_return = df_return
 
     def return_process(self, schema, script):
-        dataframe = self.sql_write(schema=schema, script=script)
+        return_object = self.sql_search(schema=schema, script=script, df_return=self.df_return)
         if self.only_status is True:
-            if len(dataframe.index) > 0:
+            # when dataframe
+            if self.df_return is True:
+                if len(return_object.index) > 0:
+                    return True
+                else:
+                    return False
+            # when list
+            elif len(return_object) > 0:
                 return True
             else:
                 return False
         else:
-            return dataframe
+            return return_object
 
     def latest_ghodrat_kh_ha(self):
         #client objects live

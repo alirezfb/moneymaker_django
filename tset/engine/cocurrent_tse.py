@@ -1,9 +1,9 @@
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from datetime import datetime
-import tse_analize
-import tse_test
-import extract_save
-import my_sql
+from . import tse_analize
+from . import tse_test
+from . import extract_save
+from . import my_sql
 from time import sleep
 
 

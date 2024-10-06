@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>External Data</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"> <!-- Optional Bootstrap for styling -->
+</head>
+<body>
+
+<div class="container">
+    <h1 class="my-4">External Data</h1>
+
+    <!-- Check if there is any data to display -->
+    {% if external_data %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Datetime</th>
+                    <th>number</th>
+                    <th>Hajm Kharid</th>
+                    <th>Tedad Kharid </th>
+                    <th>Gheymat Kharid</th>
+                    <th>Gheymat Foroosh</th>
+                    <th>Olaviat Foroosh</th>
+                    <th>Hajm Foroosh</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Loop through the external data passed from the view -->
+                {% for data in external_data %}
+                <tr>
+                    <td>{{ data.datetime }}</td>
+                    <td>{{ data.number }}</td>
+                    <td>{{ data.qTitMeDem }}</td>
+                    <td>{{ data.zOrdMeDem }}</td>
+                    <td>{{ data.pMeDem }}</td>
+                    <td>{{ data.pMeOf }}</td>
+                    <td>{{ data.zOrdMeOf }}</td>
+                    <td>{{ data.qTitMeOf }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No data found.</p>
+    {% endif %}
+</div>
+
+</body>
+</html>

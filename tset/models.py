@@ -1,6 +1,21 @@
 from django.db import models
 
 
+
+class nmd46348559193224090(models.Model):
+    datetime = models.DateField()
+    number = models.IntegerField()
+    qTitMeDem = models.IntegerField()
+    zOrdMeDem = models.IntegerField()
+    pMeDem = models.IntegerField()
+    pMeOf = models.IntegerField()
+    zOrdMeOf = models.IntegerField()
+    qTitMeOf = models.IntegerField()
+
+    def __str__(self):
+        return f'{self.datetime} - {self.number} - {self.pMeOf}'
+
+
 class Venue(models.Model):
     name = models.CharField('Venue name', max_length=120)
     address = models.CharField(max_length=300)

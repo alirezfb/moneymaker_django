@@ -18,6 +18,7 @@ import re
 import logging
 import os
 import traceback
+from . import tse_time
 import sys
 from threading import Thread
 from multiprocessing import pool
@@ -907,7 +908,7 @@ class count:
 
 class search:
 
-    def script(schema:str, script:str):
+    def script(schema:str, script:str, df_return=True):
         try:
             # baz kardane sql va khandane tblnamadhatemp
             conn = mariadb.connect(
@@ -917,14 +918,20 @@ class search:
                 port=3306,
                 database=schema
             )
-            engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                   "/"+schema)
-            df = pd.read_sql(script, engine)
-            conn.commit()
-            conn.close()
-            del conn
+            if df is True:
+                engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
+                                       "/"+schema)
 
-            return df
+                return_object = pd.read_sql(script, engine)
+                pass
+            else:
+                cur = conn.cursor()
+                cur.execute(script)
+                conn.commit()
+                conn.close()
+                del conn
+                return_object = cur.fetchone()
+            return return_object
         except:
             try:
                 conn.commit()

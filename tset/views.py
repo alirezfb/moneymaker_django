@@ -1,28 +1,48 @@
 from django.shortcuts import render
 import importlib
 import sys
+from django.db import connections
 from calendar import HTMLCalendar
 from datetime import datetime
-from .models import Event, best_limits
+from .models import Event, best_limits, nmd46348559193224090
 import calendar
-tse_analize = importlib.import_module(r"E/rogramming/projects/python/Moneymaker/Moneymaker/Python/tse_analize")
-my_sql = importlib.import_module(r"E/rogramming/projects/python/Moneymaker/Moneymaker/Python/my_sql")
+from .external_models import ExternalData
+from .templatetags import test_django
+
+#tse_analize = importlib.import_module(r"E/rogramming/projects/python/Moneymaker/Moneymaker/Python/tse_analize")
+#my_sql = importlib.import_module(r"E/rogramming/projects/python/Moneymaker/Moneymaker/Python/my_sql")
 def all_events(request):
     event_list = Event.objects.all()
     return render(request, 'tset/event_list.html',
                   {'event_list': event_list})
 def close_best_3(request):
-    index_list = my_sql.read.index(bl_check=True)
-    df = tse_analize.list_return(index_list, "close_best_limit")
-    dic = {
-        "df": df.to_html()
-    }
-    print(dic)
-    return render(request, 'tset/close_best.html', context=dic)
+    df_html = test_django.pd_to_html()
+    return render(request, 'tset/close_best.html', {'external_data': df_html})
 def close_best(request):
     event_list = Event.objects.all()
     return render(request, 'tset/close_best.html',
                   {})
+
+def external_data_view(request):
+    with connections['external_db'].cursor() as cursor:
+        # Run a raw SQL query
+        cursor.execute("SELECT * FROM nmd46348559193224090")
+        rows = cursor.fetchall()
+
+    # Convert the result to a list of dictionaries for easy use in templates
+    external_data = [{'datetime': row[0], 'number': row[1],
+                      'qTitMeDem': row[2], 'zOrdMeDem': row[3],
+                      'pMeDem': row[4], 'pMeOf:': row[5],
+                      'zOrdMeOf': row[6], 'qTitMeOf': row[7]} for row in rows]
+
+    return render(request, 'tset/close_best.html', {'external_data': external_data})
+
+def financial_records_view(request):
+    # Fetch all financial records from the database
+    records = nmd46348559193224090.objects.all()
+    # Pass data to the template
+    return render(request, 'tset/close_best.html', {'records': records})
+
 
 def close_best_2(request):
     data = best_limits.get_related_articles.raw("select * from nmd46348559193224090")
