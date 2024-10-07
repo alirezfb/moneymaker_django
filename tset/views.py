@@ -16,7 +16,7 @@ def all_events(request):
     return render(request, 'tset/event_list.html',
                   {'event_list': event_list})
 def close_best_3(request):
-    df_html = test_django.pd_to_html()
+    df_html = test_django.pd_to_html2()
     return render(request, 'tset/close_best.html', {'external_data': df_html})
 def close_best(request):
     event_list = Event.objects.all()
@@ -36,6 +36,22 @@ def external_data_view(request):
                       'zOrdMeOf': row[6], 'qTitMeOf': row[7]} for row in rows]
 
     return render(request, 'tset/close_best.html', {'external_data': external_data})
+
+def history(request):
+    with connections['external_manager'].cursor() as cursor:
+        # Run a raw SQL query
+        cursor.execute("SELECT namad_index,name FROM tblnamadha")
+        rows = cursor.fetchall()
+
+    # Convert the result to a list of dictionaries for easy use in templates
+    external_data = [{'name': row[1], 'index': row[0]} for row in rows]
+
+    return render(request, 'tset/history.html', {'external_data': external_data})
+
+
+def history_detail_view(request, index):
+    df_html = test_django.history_to_html(index, "moneymaker")
+    return render(request, 'tset/history_index.html', {'external_data': df_html})
 
 def financial_records_view(request):
     # Fetch all financial records from the database

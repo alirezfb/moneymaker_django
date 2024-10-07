@@ -50,3 +50,22 @@ def pd_to_html():
         return df_html
     except:
         return None
+
+
+def pd_to_html2():
+    try:
+        df = tse_analize.django_temp()
+        df_html = df.to_html(justify="center", classes="table table-bordered")
+        return df_html
+    except:
+        return None
+
+
+def history_to_html(index, schema):
+    try:
+        df = my_sql.read.all_tables(index, schema)
+        df_html = df.to_html(justify="center", classes="table table-bordered")
+        return df_html
+    except:
+        my_sql.log.error_write("")
+        return None

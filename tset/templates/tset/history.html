@@ -16,28 +16,16 @@
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th>Datetime</th>
-                    <th>number</th>
-                    <th>Hajm Kharid</th>
-                    <th>Tedad Kharid </th>
-                    <th>Gheymat Kharid</th>
-                    <th>Gheymat Foroosh</th>
-                    <th>Olaviat Foroosh</th>
-                    <th>Hajm Foroosh</th>
+                    <th>Name</th>
+                    <th>Index</th>
                 </tr>
             </thead>
             <tbody>
                 <!-- Loop through the external data passed from the view -->
                 {% for data in external_data %}
                 <tr>
-                    <td>{{ data.datetime }}</td>
-                    <td>{{ data.number }}</td>
-                    <td>{{ data.qTitMeDem }}</td>
-                    <td>{{ data.zOrdMeDem }}</td>
-                    <td>{{ data.pMeDem }}</td>
-                    <td>{{ data.pMeOf }}</td>
-                    <td>{{ data.zOrdMeOf }}</td>
-                    <td>{{ data.qTitMeOf }}</td>
+                    <td><a href="{% url 'index_history' data.index %}">{{ data.name }}</a></td>
+                    <td>{{ data.index }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

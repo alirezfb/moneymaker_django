@@ -94,7 +94,24 @@ DATABASES = {
         'PASSWORD': 'Unique2213',
         'HOST': 'localhost',
         'PORT': '3306',
+    },
+    'external_manager': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'manager',
+        'USER': 'root',
+        'PASSWORD': 'Unique2213',
+        'HOST': 'localhost',
+        'PORT': '3306',
+    },
+    'external_moneymaker_history': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'moneymaker',
+        'USER': 'root',
+        'PASSWORD': 'Unique2213',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
+
 }
 
 # Password validation
