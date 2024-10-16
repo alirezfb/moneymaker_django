@@ -13,10 +13,13 @@ import pandas as pd
 import warnings
 import django
 import operator
+
 try:
     from . import tse_time
     from . import my_sql
+    from . import tse_connect
 except:
+    import tse_connect
     import tse_time
     import my_sql
 
@@ -77,7 +80,6 @@ def list_calculate_pd_2(index, pd_dataframe: pd.DataFrame, live: bool):
         pd_dataframe = pd.concat([pd_dataframe, temp_df], axis=1)"""
         return temp_df
     except:
-        print(sys.exc_info())
         my_sql.log.error_write(index)
         return None
 
@@ -394,16 +396,17 @@ class calculate_pd:
         pass
 
 
-def dataframe_return(index_list, definition):
+def dataframe_return(index_list, definition: str = "last_5_best_limit"):
     try:
         result_list = []
         for index in index_list:
             obj = scripts(index=index, only_status=False, df_return=True)
-            func = "scripts." + definition + "(self)"
-            res = getattr(obj, definition)()
-            if res is None:
+            func = "scripts." + definition + "()"
+            temp_res = getattr(obj, definition)()
+            if temp_res is None:
                 continue
-            elif len(res.index) > 0:
+            elif len(temp_res.index) > 0:
+                res = (pd.DataFrame(temp_res.sum())).T
                 res['index'] = str(index)
                 res['name'] = my_sql.search.names(index)
                 result_list.append(res)
@@ -417,7 +420,7 @@ def dataframe_return(index_list, definition):
             return_df = pd.concat([return_df, df], axis=0, ignore_index=True)
         return_df.columns = ["Hajm Kharid", "Tedad Kharid",
                              "Gheymat Kharid", "Gheymat Foroosh",
-                             "Olaviat Foroosh", "Hajm Foroosh",
+                             "Tedad Foroosh", "Hajm Foroosh",
                              "Index", "Name"]
         return return_df
     except:
@@ -425,21 +428,43 @@ def dataframe_return(index_list, definition):
         return None
 
 
-def django_temp():
+def sum_best_limit(object_list: list):
     try:
-        script = "select * from live_best_limits"
+        return_list = []
+        # number of lists
+        for i in range(0, len(object_list) - 1):
+            temp_num = 0
+            # number of list objects
+            for j in range(0, len(object_list[0]) - 1):
+                temp_num += object_list[i][j]
+                pass
+            return_list.append(temp_num)
+            pass
+        return return_list
+    except:
+        my_sql.log.error_write("")
+        return None
+
+
+def django_temp(live=True):
+    try:
+        if live is True:
+            script = "select * from live_best_limits"
+        else:
+            script = "select * from all_best_limits"
         res = my_sql.search.script("best_limits", script, df_return=True)
         return res
     except:
         my_sql.log.error_write("")
         return None
 
+
 def list_return(index_list, definition):
     try:
         result_list = []
         for index in index_list:
-            obj = scripts(index=index, only_status=True, df_return=True)
-            func = "scripts." + definition + "(self)"
+            obj = scripts(index=index, only_status=True, df_return=False)
+            func = "scripts." + definition + "()"
             res = getattr(obj, definition)()
             if res is True:
                 result_list.append(index)
@@ -450,6 +475,21 @@ def list_return(index_list, definition):
         my_sql.log.error_write("")
         return None
 
+
+def close_market_list(index_list):
+    try:
+        result_list = []
+        definition = "last_5_best_limit"
+        for index in index_list:
+            obj = scripts(index=index, only_status=False, df_return=True)
+            func = "scripts." + definition + "()"
+            res = getattr(obj, definition)()
+        return result_list
+    except:
+        my_sql.log.error_write("")
+        return None
+
+
 def list_compare(index_list, *args):
     list_of_lists = []
     for definition in args:
@@ -459,30 +499,99 @@ def list_compare(index_list, *args):
         return_list = [num for num in return_list
                        if num in list_of_lists[i]]
     return return_list
+
+
 class scripts:
-    def __init__(self, index=0, only_status=False, index_list=None, df_return=True):
+    def __init__(self, index=0, only_status=False, index_list=None, df_return=True, group=True):
         self.name = "nmd" + str(index)
         self.index = index
         self.client_objects = ("buy_I_Volume, buy_N_Volume, buy_CountI, "
                                "buy_CountN, sell_I_Volume, sell_N_Volume, "
                                "sell_CountI, sell_CountN")
         self.closing_objects = ""
-        self.best_limits_objects = ("qTitMeDem, zOrdMeDem, "
-                                    "pMeDem, pMeOf, zOrdMeOf, qTitMeOf")
         self.day = tse_time.today_str(history=False)
         self.time = tse_time.current_time_str()[:3]
-        self.schema = my_sql.schemas
+        self.schema = my_sql.schemas()
         self.only_status = only_status
         self.index_list = index_list
         self.df_return = df_return
+        self.market_state = tse_connect.market_state()
         self.today_str = tse_time.today_str()
         self.time = tse_time.latest_ten_minutes()
 
-    def return_process(self, schema, script):
+    class columns:
+        def __init__(self):
+            self.best_limits_objects = ["qTitMeDem", "zOrdMeDem", "pMeDem",
+                                        "pMeOf", "zOrdMeOf", "qTitMeOf"]
+            self.space = " "
+            pass
+
+        def best_limits(self, sum_group=False):
+            return_object = ""
+            if sum_group is True:
+                for obj in self.best_limits_objects:
+                    return_object += self.space + "SUM(" + obj + ") " + obj + ","
+            else:
+                for obj in self.best_limits_objects:
+                    return_object += self.space + obj + ","
+            return return_object[:-1]
+
+    class objects:
+        def __init__(self):
+            self.select = "SELECT"
+            self.space_char = " "
+            self.all_word = "*"
+            self.from_word = "FROM"
+            self.where_word = "WHERE"
+            self.and_word = "AND"
+            self.order_by_word = "ORDER BY"
+            self.limit_word = "LIMIT"
+
+        def select_script(self, select_all=True, sum_group=False):
+            columns = scripts.columns()
+            if select_all is True:
+                return self.select + self.space_char + self.all_word
+            elif sum_group is True:
+                return (self.select +
+                        columns.best_limits(sum_group))
+            else:
+                return self.select + columns.best_limits()
+
+        def from_script(self, index=0, name=""):
+            if index != 0:
+                return (self.space_char + self.from_word +
+                        self.space_char + "nmd" + str(index))
+            else:
+                return self.space_char + self.from_word + self.space_char + name
+
+        def where_script(self, *args):
+            if len(args) == 0:
+                return ""
+            else:
+                return_obj = self.space_char + self.where_word
+                for condition in args:
+                    return_obj += self.space_char + condition + self.space_char + self.and_word
+                return return_obj[:-4]
+
+        def order_by_script(self, condition=""):
+            return_obj = self.space_char + self.order_by_word
+            if condition == "":
+                return ""
+            else:
+                return return_obj + self.space_char + condition
+
+        def limit_script(self, condition=100):
+            return (self.space_char + self.limit_word +
+                    self.space_char + str(condition))
+
+
+
+
+    def __return_process(self, schema, script):
         try:
             return_object = my_sql.search.script(schema=schema, script=script, df_return=self.df_return)
             if self.only_status is True:
-                # when dataframe
+                kk = scripts.objects  # when dataframe
                 if self.df_return is True:
                     if len(return_object.index) > 0:
                         return True
@@ -501,13 +610,14 @@ class scripts:
 
     def latest_ghodrat_kh_ha(self):
         try:
-        #client objects live
-            script = ("select * from " + self.name + (" where buy_CountI < sell_CountI and"
-                                                      " buy_I_Volume/buy_CountI > sell_I_Volume/sell_CountI"
-                                                      " and finalLastDate LIKE " + self.day +
-                                                      " and lastHEven LIKE " + "'" + self.time.latest_ten_minutes() +
-                                                      " ORDER BY lastHEven DESC Limit 1"))
-            return scripts.return_process(self, self.schema.live_moneymaker(self), script=script)
+            # client objects live
+            script = ("select * from " + self.name +
+                      (" where buy_CountI < sell_CountI and"
+                       " buy_I_Volume/buy_CountI > sell_I_Volume/sell_CountI"
+                       " and finalLastDate LIKE " + self.day +
+                       " and lastHEven LIKE " + "'" + self.time.latest_ten_minutes() +
+                       " ORDER BY lastHEven DESC Limit 1"))
+            return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
@@ -515,10 +625,49 @@ class scripts:
     def latest_best_limit(self):
         try:
             script = ("select " + self.best_limits_objects + " from " +
-                      self.name + (" where qTitMeDem/zOrdMeDem > " +
-                                   "qTitMeOf/zOrdMeOf and datetime between NOW() -" +
-                                   " INTERVAL 1 MINUTE AND NOW() Limit 1"))
-            return scripts.return_process(self, self.schema.best_limits(self), script=script)
+                      self.name + (" where datetime between NOW() -" +
+                                   " INTERVAL 3 MINUTE AND NOW() Limit 1"))
+            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+        except:
+            my_sql.log.error_write(self.index)
+            return None
+
+    def sum_live_best_limit(self):
+        try:
+            script = ("select " + self.best_limits_objects + " from " +
+                      self.name + (" where datetime between NOW() -" +
+                                   " INTERVAL 3 MINUTE AND NOW() Limit 1"))
+            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+        except:
+            my_sql.log.error_write(self.index)
+            return None
+
+    def read_sum_live_best_limit(self):
+        try:
+            script = ("select * from live_best_limits" +
+                      (" where 'Hajm Kharid' >" +
+                       " 'Hajm Foroosh'"))
+            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+        except:
+            my_sql.log.error_write(self.index)
+            return None
+
+    """def latest_best_limit(self):
+        try:
+            script = ("select " + self.best_limits_objects + " from " +
+                      self.name + (" where datetime between NOW() -" +
+                                   " INTERVAL 3 MINUTE AND NOW() Limit 1"))
+            dataframe = scripts.__return_process(self, self.schema.best_limits(), script=script)
+            return scripts.__operations(self, "qTitMeDem/zOrdMeDem", "(qTitMeOf/zOrdMeOf)*2")
+        except:
+            my_sql.log.error_write(self.index)
+            return None"""
+
+    def all_live_best_limits(self):
+        try:
+            script = ("select " + self.best_limits_objects + " from " +
+                      self.name + " Limit 1")
+            return scripts.__return_process(self, self.schema.best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
@@ -531,7 +680,29 @@ class scripts:
                       " finalLastDate = " + self.today_str +
                       " and lastHEven < " + self.time +
                       " ORDER BY lastHEven DESC Limit 1")
-            return scripts.return_process(self, self.schema.live_moneymaker(self), script=script)
+            return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
+        except:
+            my_sql.log.error_write(self.index)
+            return None
+
+    def last_5_best_limit(self):
+        try:
+            script = ("select SUM(qTitMeDem), SUM(zOrdMeDem),"
+                      " SUM(pMeDem), SUM(pMeOf), SUM(zOrdMeOf),"
+                      " SUM(qTitMeOf) from nmd46348559193224090" +
+                      " where datetime between NOW() -" +
+                      " INTERVAL 3 HOUR AND NOW()")
+            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+        except:
+            my_sql.log.error_write(self.index)
+            return None
+
+    def all_close_best_limit(self):
+        try:
+            script = ("select " + self.best_limits_objects +
+                      " from " + self.name +
+                      " LIMIT 5")
+            return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
@@ -541,12 +712,11 @@ class scripts:
             script = ("select " + self.best_limits_objects +
                       " from " + self.name +
                       " where zOrdMeDem >" +
-                      " ((zOrdMeOf)*3) and"
-                      " qTitMeDem/zOrdMeDem > "
+                      " ((zOrdMeOf)*3) and" +
+                      " qTitMeDem/zOrdMeDem >" +
                       " (qTitMeOf/zOrdMeOf)*2" +
-                      " ORDER BY datetime DESC"
-                      " LIMIT 1")
-            return scripts.return_process(self, self.schema.best_limits(self), script=script)
+                      " LIMIT 5")
+            return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
@@ -554,11 +724,11 @@ class scripts:
     def close_ghodrat_kh_ha(self):
         try:
             script = ("select * from " +
-                      self.name + (" where ghodrat_kh_ha > " +
-                                   "ghodrat_fo_ha * 3 and "
-                                   "ghodrat_kh_ha > ghodrat_kh_ho "
-                                   "and dEven is Like " + self.today_str))
-            return scripts.return_process(self, self.schema.history_analyze(self), script=script)
+                      self.name + " where ghodrat_kh_ha >" +
+                      " ghodrat_fo_ha * 3 and" +
+                      " ghodrat_kh_ha > ghodrat_kh_ho" +
+                      " and dEven Like " + str(self.market_state.last_open()))
+            return scripts.__return_process(self, self.schema.history_analyze(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
@@ -570,7 +740,14 @@ class scripts:
                                    " sell_N_Volume and"
                                    " dEven IS LIKE " + self.today_str +
                                    " ORDER BY dEven DESC LIMIT 1"))
-            return scripts.return_process(self, self.schema.live_moneymaker(self), script=script)
+            return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
+
+
+a = scripts.objects()
+b = (a.select_script() + a.from_script(name="nmd4634") +
+     a.where_script("mamad > 4", 'j<v', " kir>kos") +
+     a.order_by_script("ffff") + a.limit_script(3))
+print(b)

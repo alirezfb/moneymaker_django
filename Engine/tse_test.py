@@ -15,6 +15,7 @@ from concurrent.futures import ProcessPoolExecutor
 import threading
 import multiprocessing
 from time import sleep
+
 try:
     from . import tse_connect
     from . import tse_analize
@@ -176,6 +177,7 @@ def Old_HistoryUpdate__(index):
     return 0
     pass
 
+
 def OldLiveUpdate__(index):
     # black list check variable
     bl_temp = False
@@ -227,46 +229,67 @@ def live_fetcher__(index):
         best_limits = extract_save.UrlFetcher.best_limits_fetch(index)
         pass
     return [client_types, closing_price_responce, best_limits]
+
+
 def history_fetcher__(index):
-    # fetching price list from url and saving them
-    closing_price_responce = extract_save.UrlFetcher.closing_price_download_pd(index, live=False)
-    # timeout error
-    if closing_price_responce is None:
-        return None
-    else:
-        # fetching client types parameters and saving them
-        client_types = extract_save.UrlFetcher.client_types_download_pd(index, closing_price_responce, live=False)
-        pass
-    return [client_types, closing_price_responce]
-
-
-def history_write__(responce_list, index):
     # getting saved dates of an index in main database
     main_date_list = my_sql.search.dates(index)
     # getting saved dates of an index in analize database
     analyze_date_list = my_sql.search.dates(index, schema="analize")
-    client_responce = responce_list[0]
-    closing_responce = responce_list[1]
-    if client_responce is None or closing_responce is None:
-        return None
-    elif main_date_list[0] == tse_time.day_subtract(days_number=1, holiday_check=True):
+    # last open day
+    market_obj = tse_connect.market_state()
+    last_open = market_obj.last_open()
+    if last_open == main_date_list[0]:
         return None
     else:
-        pd_dataframe = tse_connect.HistoryDatabaseUpdate.dataframe_create(client_responce, closing_responce, index)
-        del client_responce, closing_responce
-        if pd_dataframe is None:
+        history_object = tse_connect.history_database(index)
+        # fetching price list from url and saving them
+        closing_price_response = history_object.fetch_closing_price()
+        best_limits_response = history_object.fetch_best_limits()
+        # timeout error
+        if closing_price_response is None:
             return None
         else:
-            my_sql.Write.HistoryMoneymaker(pd_dataframe, index, tbl_dates=main_date_list)
-            analyze_df: pandas.DataFrame = tse_analize.list_calculate_pd_2(index, pd_dataframe=pd_dataframe, live=False)
-            del pd_dataframe
-            if analyze_df is None:
+            # fetching client types parameters and saving them
+            client_types = history_object.fetch_client_types()
+            pass
+        return [client_types, closing_price_response, best_limits_response]
+
+
+def history_write__(response_list, index):
+    if response_list is None:
+        return None
+    else:
+        history_object = tse_connect.history_database(index, save_limit=800)
+        # getting saved dates of an index in main database
+        main_date_list = my_sql.search.dates(index)
+        # getting saved dates of an index in analize database
+        analyze_date_list = my_sql.search.dates(index, schema="analize")
+        client_response = response_list[0]
+        closing_response = response_list[1]
+        best_limits_response = response_list[2]
+        if client_response is None or closing_response is None:
+            return None
+        elif main_date_list[0] == tse_time.day_subtract(days_number=1, holiday_check=True):
+            return None
+        else:
+            pd_dataframe = history_object.dataframe_closing_client(closing_response, client_response)
+            best_limits_dataframe = history_object.dataframe_best_limits(best_limits_response)
+            del client_response, closing_response, best_limits_response
+            if pd_dataframe is None:
                 return None
-            elif analyze_date_list[0] == analyze_df.loc[0, 'dEven']:
-                return None
-            result = my_sql.Write.analize_list_daily(analyze_df, index=index, tbl_dates=analyze_date_list)
-            print(str(index) + " Completed " + str(result))
-            return result
+            else:
+                my_sql.Write.HistoryMoneymaker(pd_dataframe, index, tbl_dates=main_date_list)
+                my_sql.Write.close_best_limits(index, best_limits_dataframe)
+                analyze_df: pandas.DataFrame = tse_analize.list_calculate_pd_2(index, pd_dataframe=pd_dataframe, live=False)
+                del pd_dataframe, best_limits_dataframe
+                if analyze_df is None:
+                    return None
+                elif analyze_date_list[0] == analyze_df.loc[0, 'dEven']:
+                    return None
+                result = my_sql.Write.analize_list_daily(analyze_df, index=index, tbl_dates=analyze_date_list)
+                print(str(index) + " Completed " + str(result))
+                return result
 
 
 def live_write__(responce_list, index):

@@ -17,6 +17,7 @@ from urllib.request import urlopen, Request
 import random
 import pandas as pd
 import numpy as np
+
 try:
     from . import tse_time
     from . import my_sql
@@ -312,179 +313,146 @@ in tabe baraye estekhraje namad va return karde oon hatesh
 """
 
 
-class HistoryDatabaseUpdate():
+class urls:
+    def __init__(self, index):
+        self.index = index
 
-    def closing_prices_pd(index, save_limit):
+    def history_closing_price(self):
+        return "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/" + self.index + "/0"
+
+    def history_client_types(self):
+        return "https://cdn.tsetmc.com/api/ClientType/GetClientTypeHistory/" + self.index
+
+    def history_best_limit(self):
+        return "https://cdn.tsetmc.com/api/BestLimits/" + self.index
+
+
+class history_database:
+    def __init__(self, index, save_limit=0):
+        self.index = index
+        self.headers = [{
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/109.0.0.0 Safari/537.36',
+        }, {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                          'Safari/537.36',
+        }, {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
+                          'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
+        }]
+        self.urls = urls(index)
+        self.save_limit = save_limit
+        self.drop_columns_closing_price = ['priceYesterday', 'priceFirst', 'last', 'id',
+                                           'iClose', 'yClose', 'pDrCotVal', 'hEven']
+        self.drop_columns_client_types = ['recDate', 'insCode']
+        self.drop_columns_best_limits = ['insCode']
+        self.json_name_closing_price = 'closingPriceDaily'
+        self.json_name_client_types = 'clientType'
+        self.json_name_best_limits = 'bestLimits'
+
+    def __fetcher(self, url_address):
         error_count = 0
         while error_count <= 4:
             try:
-                url_template = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/"
-                url_dates = url_template + index + "/0"
-
-                headers = [{
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                                  'Chrome/109.0.0.0 Safari/537.36',
-                }, {
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
-                                  'Safari/537.36',
-                }, {
-                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
-                                  'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
-                }]
-                responce_dates_url = requests.get(url_dates, headers=headers[random.randint(0, 2)])
-                """df = pd.json_normalize(responce_dates_url.json()['closingPriceDaily'])
-                try:
-                    df.drop(['priceYesterday', 'priceFirst', 'last', 'id',
-                            'iClose', 'yClose', 'pDrCotVal', 'hEven'], axis=1, inplace=True)
-                except:
-                    pass
-                return df"""
-                return responce_dates_url
+                return requests.get(url_address, headers=self.headers[random.randint(0, 2)])
             except:
                 error_count += 1
                 if error_count < 4:
                     sleep(random.random())
-                    pass
                 else:
                     # error handling
-                    my_sql.log.error_write(index)
+                    my_sql.log.error_write(self.index)
                     return None
-                pass
-            pass
 
+    def fetch_closing_price(self):
+        return history_database.__fetcher(self, self.urls.history_closing_price())
 
-    def client_types_pd(index, closing_price):
-        error_count = 0
-        while error_count <= 4:
-            try:
-                url_template = "https://cdn.tsetmc.com/api/ClientType/GetClientTypeHistory/"
-                url_dates = url_template + index
+    def fetch_client_types(self):
+        return history_database.__fetcher(self, self.urls.history_client_types())
 
-                headers = [{
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                                  'Chrome/109.0.0.0 Safari/537.36',
-                }, {
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
-                                  'Safari/537.36',
-                }, {
-                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
-                                  'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
-                }]
-                responce_client_types = requests.get(url_dates, headers=headers[random.randint(0,2)])
-                """df = pd.json_normalize(responce_client_types.json()['clientType'])
-                try:
-                    df.drop(['recDate', 'insCode'], axis=1, inplace=True)
-                    pass
-                except:
-                    pass
-                closing_price = pd.concat([closing_price, df], axis=1)
-                if closing_price is None:
-                    return None
-                elif len(closing_price.index) < 800:
-                    loop_length = len(closing_price.index) - 1
-                    pass
-                else:
-                    loop_length = 800
-                    closing_price.drop(closing_price.index[loop_length - 1:closing_price.shape[0]], axis=0, inplace=True)
-                    pass
-                return closing_price"""
-                return responce_client_types
-            except:
-                error_count += 1
-                if error_count < 4:
-                    sleep(random.random())
-                    pass
-                else:
-                    # error handling
-                    my_sql.log.error_write(index)
-                    return None
-                pass
-            pass
-        # error handling
-        my_sql.log.error_write(index)
-        return None
+    def fetch_best_limits(self):
+        return history_database.__fetcher(self, self.urls.history_best_limit())
 
-
-    def dataframe_create(client_responce, closing_responce, index):
+    def dataframe_closing_client(self, closing_response, client_response):
         try:
-            closing_df = HistoryDatabaseUpdate.closing_price_df(index, closing_responce)
-            client_df = HistoryDatabaseUpdate.client_types_df(index, closing_df, client_responce)
-            del closing_df
-            return client_df
+            closing_df = history_database.__create_dataframe(self, closing_response, self.json_name_closing_price,
+                                                             self.drop_columns_closing_price)
+            client_df = history_database.__create_dataframe(self, client_response, self.json_name_client_types,
+                                                            self.drop_columns_client_types)
+            if closing_df is None or client_df is None:
+                return None
+            else:
+                return_df = pd.DataFrame()
+                if len(closing_df.index) > len(client_df.index):
+                    return_df = pd.concat([closing_df, client_df], axis=1)
+                    loop_length = len(closing_df.index) - 1
+                else:
+                    return_df = pd.concat([client_df, closing_df], axis=1)
+                    loop_length = len(client_df.index) - 1
+            return_df.drop(return_df.index[loop_length - 1:return_df.shape[0]], axis=0, inplace=True)
+            return return_df
         except:
-            my_sql.log.error_write(index)
+            my_sql.log.error_write(self.index)
+            return None
 
-    def closing_price_df(index, url_responce):
+    def dataframe_best_limits(self, url_response):
+        return history_database.__create_dataframe(self, url_response,
+                                                   self.json_name_best_limits,
+                                                   self.drop_columns_best_limits)
+
+    def __create_dataframe(self, url_response, json_name, drop_columns):
         try:
-            df = pd.json_normalize(url_responce.json()['closingPriceDaily'])
+            df = pd.json_normalize(url_response.json()[json_name])
             try:
-                df.drop(['priceYesterday', 'priceFirst', 'last', 'id',
-                         'iClose', 'yClose', 'pDrCotVal', 'hEven'], axis=1, inplace=True)
+                df.drop(drop_columns, axis=1, inplace=True)
             except:
                 pass
+            if self.save_limit > 0:
+                if len(df.index) < self.save_limit:
+                    loop_length = len(df.index) - 1
+                else:
+                    loop_length = self.save_limit
+                    df.drop(df.index[loop_length - 1:df.shape[0]], axis=0, inplace=True)
             return df
         except:
             # error handling
-            my_sql.log.error_write(index)
+            my_sql.log.error_write(self.index)
             return None
 
-    def client_types_df(index, closing_df, url_responce):
+
+def tblnamadha_update():
+    error_count = 0
+    error_message = ""
+    while error_count < 10:
         try:
-            df = pd.json_normalize(url_responce.json()['clientType'])
-            try:
-                df.drop(['recDate', 'insCode'], axis=1, inplace=True)
-            except:
-                pass
-            closing_df = pd.concat([closing_df, df], axis=1)
-            if closing_df is None:
-                return None
-            elif len(closing_df.index) < 800:
-                loop_length = len(closing_df.index) - 1
+            url_template = "https://cdn.tsetmc.com/api/ClosingPrice/GetMarketMap?market=0&size=1365&sector=0&typeSelected=1&hEven=0"
+
+            headers = [{
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                              'Chrome/109.0.0.0 Safari/537.36',
+            }, {
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                              'Safari/537.36',
+            }, {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
+                              'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
+            }]
+            responce_dates_url = requests.get(url_template, headers=headers[random.randint(0, 2)])
+            df = pd.json_normalize(responce_dates_url.json())
+            return df
+        except:
+            error_count += 1
+            if error_count > 4:
+                sleep(random.random())
                 pass
             else:
-                loop_length = 800
-                closing_df.drop(closing_df.index[loop_length - 1:closing_df.shape[0]], axis=0, inplace=True)
-                pass
-            return closing_df
-        except:
-            # error handling
-            my_sql.log.error_write(index)
-            return None
-
-    @staticmethod
-    def tblnamadha_update():
-        error_count = 0
-        error_message = ""
-        while error_count < 10:
-            try:
-                url_template = "https://cdn.tsetmc.com/api/ClosingPrice/GetMarketMap?market=0&size=1365&sector=0&typeSelected=1&hEven=0"
-
-                headers = [{
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                                  'Chrome/109.0.0.0 Safari/537.36',
-                }, {
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
-                                  'Safari/537.36',
-                }, {
-                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
-                                  'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
-                }]
-                responce_dates_url = requests.get(url_template, headers=headers[random.randint(0, 2)])
-                df = pd.json_normalize(responce_dates_url.json())
-                return df
-            except:
-                error_count += 1
-                if error_count > 4:
-                    sleep(random.random())
-                    pass
-                else:
-                    pass
                 pass
             pass
-        if error_count >= 10:
-            my_sql.log.error_write("0")
-            return None
         pass
+    if error_count >= 10:
+        my_sql.log.error_write("0")
+        return None
+    pass
 
 
 class LiveDatabaseUpdate():
@@ -518,8 +486,6 @@ class LiveDatabaseUpdate():
                 pass
             pass
         pass
-
-
 
     def client_types_pd(index, closing_price):
         error_count = 0
@@ -599,13 +565,13 @@ class LiveDatabaseUpdate():
             dataframe = pd.json_normalize(url_responce.json()['closingPriceInfo'])
             try:
                 dataframe.drop(['instrument', 'nvt', 'mop', 'pRedTran', 'dEven', 'hEven',
-                         'thirtyDayClosingHistory', 'priceChange', 'last', 'id',
-                         'iClose', 'yClose', 'insCode', 'instrumentState.idn',
-                         'instrumentState.dEven', 'instrumentState.hEven',
-                         'instrumentState.insCode', 'instrumentState.lVal18AFC',
-                         'instrumentState.lVal30', 'instrumentState.cEtaval',
-                         'instrumentState.realHeven', 'instrumentState.underSupervision',
-                         'instrumentState.cEtavalTitle'], axis=1, inplace=True)
+                                'thirtyDayClosingHistory', 'priceChange', 'last', 'id',
+                                'iClose', 'yClose', 'insCode', 'instrumentState.idn',
+                                'instrumentState.dEven', 'instrumentState.hEven',
+                                'instrumentState.insCode', 'instrumentState.lVal18AFC',
+                                'instrumentState.lVal30', 'instrumentState.cEtaval',
+                                'instrumentState.realHeven', 'instrumentState.underSupervision',
+                                'instrumentState.cEtavalTitle'], axis=1, inplace=True)
             except:
                 pass
             return dataframe
@@ -679,3 +645,56 @@ def list_int(list):
         return_list.append(int(i))
         pass
     return return_list
+
+
+class market_state:
+    def __init__(self):
+        self.url = "https://cdn.tsetmc.com/api/MarketData/GetMarketOverview/0"
+        self.headers = [{
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/109.0.0.0 Safari/537.36',
+        }, {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                          'Safari/537.36',
+        }, {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
+                          'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
+        }]
+        self.response = market_state.__response(self)
+        self.dataframe = market_state.__create_dataframe(self)
+
+    def __response(self):
+        for i in range(0, 2):
+            try:
+                req = requests.get(self.url, headers=self.headers[random.randint(0, 2)])
+                return req
+            except:
+                if i > 1:
+                    my_sql.log.error_write("")
+                    return None
+                else:
+                    sleep(random.randint(0, 2))
+    def __create_dataframe(self):
+        try:
+            return pd.json_normalize(self.response.json()["marketOverview"])
+        except:
+            my_sql.log.error_write("")
+            return None
+
+    def state(self):
+        try:
+            if self.dataframe.loc[0, "marketState"] == "T":
+                return True
+            else:
+                return False
+        except:
+            my_sql.log.error_write("")
+            return None
+
+    def last_open(self):
+        try:
+            return self.dataframe.loc[0, "marketActivityDEven"]
+        except:
+            my_sql.log.error_write("")
+            return None
+

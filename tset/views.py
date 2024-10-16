@@ -18,6 +18,11 @@ def all_events(request):
 def close_best_3(request):
     df_html = test_django.pd_to_html2()
     return render(request, 'tset/close_best.html', {'external_data': df_html})
+
+def history_close_best(request):
+    df_html = test_django.pd_to_html2(live=False)
+    return render(request, 'tset/history_best_limits.html', {'external_data': df_html})
+
 def close_best(request):
     event_list = Event.objects.all()
     return render(request, 'tset/close_best.html',
@@ -52,6 +57,13 @@ def history(request):
 def history_detail_view(request, index):
     df_html = test_django.history_to_html(index, "moneymaker")
     return render(request, 'tset/history_index.html', {'external_data': df_html})
+
+def close_best_limits(request, index):
+    if index == 0:
+        pass
+    else:
+        df_html = test_django.close_best_limit_tohtml(index, "close_best_limits")
+    return render(request, 'tset/history_best_limits.html', {'external_data': df_html})
 
 def financial_records_view(request):
     # Fetch all financial records from the database

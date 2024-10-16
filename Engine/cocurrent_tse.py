@@ -48,32 +48,37 @@ def history_update(index_list):
 
 def infinity_run():
     if __name__ == '__main__':
-        print(my_sql.read.all_tables("46348559193224090", "moneymaker"))
-        sleep(300)
         endless = True
         index_list = my_sql.read.index(bl_check=True)
+        index_list = index_list[0:20]
         while endless is True:
             # my_sql.LiveTableCreate.price_table()
             market_state = extract_save.UrlFetcher.market_overview(only_state=True)
             while market_state is True:
                 live_update(index_list, state_check=True)
                 market_state = extract_save.UrlFetcher.market_overview(only_state=True)
-                temp_index = tse_analize.list_compare(index_list, "latest_best_limit",
+                live_best_limits = tse_analize.dataframe_return(index_list, "sum_live_best_limit")
+                my_sql.Write.all_best_limits(live_best_limits, live=True)
+                temp_index = tse_analize.list_compare(index_list, "read_sum_live_best_limit",
                                                       "latest_ha_be_ho")
-                closed_best_limits = tse_analize.dataframe_return(temp_index, "latest_best_limit")
-                my_sql.Write.all_best_limits(closed_best_limits, live=True)
-                sleep(60)
+                live_best_limits = tse_analize.dataframe_return(temp_index, "sum_live_best_limit")
+                my_sql.Write.all_best_limits(live_best_limits, live=True, truncate=True)
+                sleep(190)
                 pass
             if market_state is False:
                 print("MARKET CLOSED")
+                """ my_sql.HistoryTableCreate.price_table()
+                my_sql.HistoryTableCreate.analize_table()
+                history_update(index_list)"""
                 temp_index = tse_analize.list_compare(index_list, "close_best_limit", "close_ghodrat_kh_ha")
-                closed_best_limits = tse_analize.dataframe_return(temp_index, "close_best_limit")
-                my_sql.Write.all_best_limits(closed_best_limits)
+                print(temp_index)
+                print(len(temp_index))
+                live_best_limits = tse_analize.dataframe_return(temp_index, "all_close_best_limit")
+                print(live_best_limits)
+                print(len(live_best_limits.index))
+                my_sql.Write.all_best_limits(live_best_limits, live=False)
                 print('done')
                 sleep(300)
-                my_sql.HistoryTableCreate.price_table()
-                my_sql.HistoryTableCreate.analize_table()
-                history_update(index_list)
                 pass
             else:
                 print("WTF")

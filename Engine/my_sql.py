@@ -285,7 +285,7 @@ class Write:
                                        "/best_limits")
                 # adding to database
                 if truncate is True:
-                    modification.truncate("best_limits", "live_best_limits")
+                    modification.truncate("best_limits", tbl_name)
                 else:
                     pass
                 counter = dataframe.to_sql(name=tbl_name, con=engine,
@@ -315,6 +315,37 @@ class Write:
                 # checking if the table exists and create it if not and create database engine
                 engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
                                        "/best_limits")
+                # adding to database
+                counter = dataframe.to_sql(name=namad_symbol, con=engine,
+                                           if_exists='append', index=False)
+                # killing the engine
+                engine.dispose()
+                del engine
+                # return saved entries
+                return counter
+            except:
+                if i == 0:
+                    dataframe.fillna(0)
+                    pass
+                else:
+                    try:
+                        engine.dispose()
+                        del engine
+                        pass
+                    except:
+                        pass
+                    log.error_write(index)
+                    return 0
+                    pass
+
+    def close_best_limits(index, dataframe: pandas.DataFrame):
+        for i in range(0, 2):
+            try:
+                # creating namad_symbol
+                namad_symbol = "nmd" + str(index)
+                # checking if the table exists and create it if not and create database engine
+                engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
+                                       "/close_best_limits")
                 # adding to database
                 counter = dataframe.to_sql(name=namad_symbol, con=engine,
                                            if_exists='append', index=False)
@@ -920,7 +951,7 @@ class read:
         try:
             # generating table name
             namad_symbol = "nmd" + str(index)
-            script = 'SELECT * FROM ' + namad_symbol + ' ORDER BY dEven DESC LIMIT 100'
+            script = 'SELECT * FROM ' + namad_symbol + ' LIMIT 100'
             # creating database connection string
             connecion_string = "mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/" + schema
             # connecting to database
@@ -997,7 +1028,7 @@ class search:
                 conn.close()
                 del conn
                 try:
-                    return_object = cur.fetchone()
+                    return_object = cur.fetchall()
                 except:
                     return_object = []
             return return_object
@@ -1424,6 +1455,7 @@ class HistoryTableCreate:
                         pass
                     except:
                         log.error_write(i)
+                        continue
                     pass
                 else:
                     #badan bayad gozine debug ezafe beshe
@@ -1478,6 +1510,7 @@ class HistoryTableCreate:
                     pass
                 except:
                     log.error_write(i)
+                    continue
                 pass
             else:
                 # badan bayad gozine debug ezafe beshe
@@ -1870,22 +1903,25 @@ class schemas:
         pass
 
     @staticmethod
-    def history_analyze(self):
+    def history_analyze():
         return "analize"
 
     @staticmethod
-    def history_moneymaker(self):
+    def history_moneymaker():
         return "moneymaker"
 
     @staticmethod
-    def live_analyze(self):
+    def live_analyze():
         return "live_analyze_update"
 
     @staticmethod
-    def live_moneymaker(self):
+    def live_moneymaker():
         return "live_moneymaker_update"
 
     @staticmethod
-    def best_limits(self):
+    def best_limits():
         return "best_limits"
 
+    @staticmethod
+    def close_best_limits():
+        return "close_best_limits"

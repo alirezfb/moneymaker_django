@@ -52,9 +52,9 @@ def pd_to_html():
         return None
 
 
-def pd_to_html2():
+def pd_to_html2(live=True):
     try:
-        df = tse_analize.django_temp()
+        df = tse_analize.django_temp(live=live)
         df_html = df.to_html(justify="center", classes="table table-bordered")
         return df_html
     except:
@@ -62,6 +62,15 @@ def pd_to_html2():
 
 
 def history_to_html(index, schema):
+    try:
+        df = my_sql.read.all_tables(index, schema)
+        df_html = df.to_html(justify="center", classes="table table-bordered")
+        return df_html
+    except:
+        my_sql.log.error_write("")
+        return None
+
+def close_best_limit_tohtml(index, schema):
     try:
         df = my_sql.read.all_tables(index, schema)
         df_html = df.to_html(justify="center", classes="table table-bordered")
