@@ -52,9 +52,9 @@ def pd_to_html():
         return None
 
 
-def pd_to_html2(live=True):
+def html_best_limits_all(live=True):
     try:
-        df = tse_analize.django_temp(live=live)
+        df = tse_analize.django_best_limits_all(live=live)
         df_html = df.to_html(justify="center", classes="table table-bordered")
         return df_html
     except:

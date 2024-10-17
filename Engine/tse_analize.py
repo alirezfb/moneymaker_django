@@ -446,7 +446,7 @@ def sum_best_limit(object_list: list):
         return None
 
 
-def django_temp(live=True):
+def django_best_limits_all(live=True):
     try:
         if live is True:
             script = "select * from live_best_limits"
@@ -518,6 +518,7 @@ class scripts:
         self.market_state = tse_connect.market_state()
         self.today_str = tse_time.today_str()
         self.time = tse_time.latest_ten_minutes()
+        self.objects = scripts.objects()
 
     class columns:
         def __init__(self):
@@ -530,11 +531,11 @@ class scripts:
             return_object = ""
             if sum_group is True:
                 for obj in self.best_limits_objects:
-                    return_object += self.space + "SUM(" + obj + ") " + obj + ","
+                    return_object += "SUM(" + obj + ") " + obj + "," + self.space
             else:
                 for obj in self.best_limits_objects:
-                    return_object += self.space + obj + ","
-            return return_object[:-1]
+                    return_object += obj + "," + self.space
+            return return_object[:-2]
 
     class objects:
         def __init__(self):
@@ -546,16 +547,17 @@ class scripts:
             self.and_word = "AND"
             self.order_by_word = "ORDER BY"
             self.limit_word = "LIMIT"
+            self.like_word = "LIKE"
+            self.market_state = tse_connect.market_state()
+            self.last_open = str(self.market_state.last_open())
+            self.time = tse_time
+            self.columns = scripts.columns()
 
-        def select_script(self, select_all=True, sum_group=False):
-            columns = scripts.columns()
-            if select_all is True:
+        def select_script(self, select_all=True, select_group="", sum_group=False):
+            if select_all is True and select_group == "":
                 return self.select + self.space_char + self.all_word
-            elif sum_group is True:
-                return (self.select +
-                        columns.best_limits(sum_group))
             else:
-                return self.select + columns.best_limits()
+                return self.select + self.space_char + select_group
 
         def from_script(self, index=0, name=""):
             if index != 0:
@@ -573,19 +575,31 @@ class scripts:
                     return_obj += self.space_char + condition + self.space_char + self.and_word
                 return return_obj[:-4]
 
-        def order_by_script(self, condition=""):
+        def order_by_script(self, condition="", order_by="DESC"):
             return_obj = self.space_char + self.order_by_word
             if condition == "":
                 return ""
             else:
-                return return_obj + self.space_char + condition
+                return return_obj + self.space_char +\
+                    condition + self.space_char + order_by
 
         def limit_script(self, condition=100):
             return (self.space_char + self.limit_word +
                     self.space_char + str(condition))
 
+        def last_open_day(self, column_name: str):
+            return (column_name + self.space_char +
+                    self.like_word + self.space_char +
+                    self.last_open)
 
+        def latest_ten_minutes(self, column_name: str):
+            return (column_name + self.space_char +
+                    "<" + self.space_char +
+                    str(self.time.latest_ten_minutes()))
 
+        def interval_between(self, column_name, interval, unit="MINUTES"):
+            return column_name + " BETWEEN NOW() - INTERVAL " + str(interval) +\
+                self.space_char + unit + " AND NOW()"
 
     def __return_process(self, schema, script):
         try:
@@ -610,13 +624,14 @@ class scripts:
 
     def latest_ghodrat_kh_ha(self):
         try:
-            # client objects live
-            script = ("select * from " + self.name +
-                      (" where buy_CountI < sell_CountI and"
-                       " buy_I_Volume/buy_CountI > sell_I_Volume/sell_CountI"
-                       " and finalLastDate LIKE " + self.day +
-                       " and lastHEven LIKE " + "'" + self.time.latest_ten_minutes() +
-                       " ORDER BY lastHEven DESC Limit 1"))
+            script = self.objects.select_script(select_all=True) +\
+                      self.objects.from_script(name=self.name) +\
+                      self.objects.where_script("buy_CountI < sell_CountI",
+                                                "buy_I_Volume/buy_CountI > sell_I_Volume/sell_CountI",
+                                                self.objects.last_open_day("finalLastDate"),
+                                                self.objects.latest_ten_minutes("lastHEven")) +\
+                      self.objects.order_by_script("lastHEven") +\
+                      self.objects.limit_script(1)
             return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
         except:
             my_sql.log.error_write(self.index)
@@ -624,30 +639,32 @@ class scripts:
 
     def latest_best_limit(self):
         try:
-            script = ("select " + self.best_limits_objects + " from " +
-                      self.name + (" where datetime between NOW() -" +
-                                   " INTERVAL 3 MINUTE AND NOW() Limit 1"))
-            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+            script = self.objects.select_script(select_all=False, select_group=self.objects.columns.best_limits(sum_group=False)) +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.where_script(self.objects.interval_between("datetime", 3)) +\
+                     self.objects.limit_script(1)
+            return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
 
     def sum_live_best_limit(self):
         try:
-            script = ("select " + self.best_limits_objects + " from " +
-                      self.name + (" where datetime between NOW() -" +
-                                   " INTERVAL 3 MINUTE AND NOW() Limit 1"))
-            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+            script = self.objects.select_script(select_all=False,select_group=self.objects.columns.best_limits()) +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.where_script(self.objects.interval_between("datetime", 3)) +\
+                     self.objects.limit_script(1)
+            return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
 
     def read_sum_live_best_limit(self):
         try:
-            script = ("select * from live_best_limits" +
-                      (" where 'Hajm Kharid' >" +
-                       " 'Hajm Foroosh'"))
-            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+            script = self.objects.select_script() +\
+                     self.objects.from_script(name="live_best_limits") +\
+                     self.objects.where_script("'Hajm Kharid' > 'Hajm Foroosh'")
+            return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
@@ -663,23 +680,29 @@ class scripts:
             my_sql.log.error_write(self.index)
             return None"""
 
-    def all_live_best_limits(self):
+    def sum_best_limits(self, live=True):
         try:
-            script = ("select " + self.best_limits_objects + " from " +
-                      self.name + " Limit 1")
-            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+            script = self.objects.select_script(select_group=self.objects.columns.best_limits()) +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.limit_script(1)
+            if live is True:
+                return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
+            else:
+                return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
 
     def latest_ha_be_ho(self):
         try:
-            script = (" select * from " + self.name +
-                      " where buy_I_Volume > ((sell_I_Volume)*2)"
-                      " and buy_I_Volume > buy_N_Volume and"
-                      " finalLastDate = " + self.today_str +
-                      " and lastHEven < " + self.time +
-                      " ORDER BY lastHEven DESC Limit 1")
+            script = self.objects.select_script() +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.where_script("buy_I_Volume > (sell_I_Volume*2)",
+                                               "buy_I_Volume > buy_N_Volume",
+                                               self.objects.last_open_day("finalLastDate"),
+                                               self.objects.latest_ten_minutes("lastHEven")) +\
+                     self.objects.order_by_script("lastHEven") +\
+                     self.objects.limit_script(1)
             return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
         except:
             my_sql.log.error_write(self.index)
@@ -687,21 +710,19 @@ class scripts:
 
     def last_5_best_limit(self):
         try:
-            script = ("select SUM(qTitMeDem), SUM(zOrdMeDem),"
-                      " SUM(pMeDem), SUM(pMeOf), SUM(zOrdMeOf),"
-                      " SUM(qTitMeOf) from nmd46348559193224090" +
-                      " where datetime between NOW() -" +
-                      " INTERVAL 3 HOUR AND NOW()")
-            return scripts.__return_process(self, self.schema.best_limits(), script=script)
+            script = self.objects.select_script(select_group=self.objects.columns.best_limits(sum_group=True)) +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.where_script(self.objects.interval_between("datetime", 3, "HOUR"))
+            return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
 
     def all_close_best_limit(self):
         try:
-            script = ("select " + self.best_limits_objects +
-                      " from " + self.name +
-                      " LIMIT 5")
+            script = self.objects.select_script(select_group=self.objects.columns.best_limits()) +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.limit_script(5)
             return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
@@ -709,13 +730,11 @@ class scripts:
 
     def close_best_limit(self):
         try:
-            script = ("select " + self.best_limits_objects +
-                      " from " + self.name +
-                      " where zOrdMeDem >" +
-                      " ((zOrdMeOf)*3) and" +
-                      " qTitMeDem/zOrdMeDem >" +
-                      " (qTitMeOf/zOrdMeOf)*2" +
-                      " LIMIT 5")
+            script = self.objects.select_script(select_group=self.objects.columns.best_limits()) +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.where_script("zOrdMeDem > (zOrdMeOf * 3)",
+                                               "qTitMeDem/zOrdMeDem > (qTitMeOf/zOrdMeOf)*2") +\
+                     self.objects.limit_script(5)
             return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
         except:
             my_sql.log.error_write(self.index)
@@ -723,11 +742,11 @@ class scripts:
 
     def close_ghodrat_kh_ha(self):
         try:
-            script = ("select * from " +
-                      self.name + " where ghodrat_kh_ha >" +
-                      " ghodrat_fo_ha * 3 and" +
-                      " ghodrat_kh_ha > ghodrat_kh_ho" +
-                      " and dEven Like " + str(self.market_state.last_open()))
+            script = self.objects.select_script() +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.where_script("ghodrat_kh_ha > (ghodrat_fo_ha * 3)",
+                                               "ghodrat_kh_ha > ghodrat_kh_ho",
+                                               self.objects.last_open_day("dEven"))
             return scripts.__return_process(self, self.schema.history_analyze(), script=script)
         except:
             my_sql.log.error_write(self.index)
@@ -735,19 +754,13 @@ class scripts:
 
     def close_ha_be_ho(self):
         try:
-            script = ("select * from " +
-                      self.name + (" where buy_I_Volume >" +
-                                   " sell_N_Volume and"
-                                   " dEven IS LIKE " + self.today_str +
-                                   " ORDER BY dEven DESC LIMIT 1"))
+            script = self.objects.select_script() +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.where_script("buy_I_Volume > sell_N_Volume",
+                                               self.objects.last_open_day("dEven")) +\
+                     self.objects.order_by_script("dEven") +\
+                     self.objects.limit_script(1)
             return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
         except:
             my_sql.log.error_write(self.index)
             return None
-
-
-a = scripts.objects()
-b = (a.select_script() + a.from_script(name="nmd4634") +
-     a.where_script("mamad > 4", 'j<v', " kir>kos") +
-     a.order_by_script("ffff") + a.limit_script(3))
-print(b)

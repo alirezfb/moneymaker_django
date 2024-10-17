@@ -50,7 +50,6 @@ def infinity_run():
     if __name__ == '__main__':
         endless = True
         index_list = my_sql.read.index(bl_check=True)
-        index_list = index_list[0:20]
         while endless is True:
             # my_sql.LiveTableCreate.price_table()
             market_state = extract_save.UrlFetcher.market_overview(only_state=True)
@@ -67,15 +66,11 @@ def infinity_run():
                 pass
             if market_state is False:
                 print("MARKET CLOSED")
-                """ my_sql.HistoryTableCreate.price_table()
+                my_sql.HistoryTableCreate.price_table()
                 my_sql.HistoryTableCreate.analize_table()
-                history_update(index_list)"""
+                history_update(index_list)
                 temp_index = tse_analize.list_compare(index_list, "close_best_limit", "close_ghodrat_kh_ha")
-                print(temp_index)
-                print(len(temp_index))
                 live_best_limits = tse_analize.dataframe_return(temp_index, "all_close_best_limit")
-                print(live_best_limits)
-                print(len(live_best_limits.index))
                 my_sql.Write.all_best_limits(live_best_limits, live=False)
                 print('done')
                 sleep(300)

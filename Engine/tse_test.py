@@ -288,6 +288,9 @@ def history_write__(response_list, index):
                 elif analyze_date_list[0] == analyze_df.loc[0, 'dEven']:
                     return None
                 result = my_sql.Write.analize_list_daily(analyze_df, index=index, tbl_dates=analyze_date_list)
+                scripts = tse_analize.scripts(index=index)
+                sum_best_limits = scripts.sum_best_limits(live=False)
+                my_sql.Write.all_best_limits(sum_best_limits, live=False, truncate=True)
                 print(str(index) + " Completed " + str(result))
                 return result
 

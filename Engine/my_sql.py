@@ -1919,7 +1919,7 @@ class schemas:
         return "live_moneymaker_update"
 
     @staticmethod
-    def best_limits():
+    def live_best_limits():
         return "best_limits"
 
     @staticmethod

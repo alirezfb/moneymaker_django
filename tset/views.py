@@ -9,24 +9,30 @@ import calendar
 from .external_models import ExternalData
 from .templatetags import test_django
 
+
 #tse_analize = importlib.import_module(r"E/rogramming/projects/python/Moneymaker/Moneymaker/Python/tse_analize")
 #my_sql = importlib.import_module(r"E/rogramming/projects/python/Moneymaker/Moneymaker/Python/my_sql")
 def all_events(request):
     event_list = Event.objects.all()
     return render(request, 'tset/event_list.html',
                   {'event_list': event_list})
-def close_best_3(request):
-    df_html = test_django.pd_to_html2()
+
+
+def live_best_all(request):
+    df_html = test_django.html_best_limits_all()
     return render(request, 'tset/close_best.html', {'external_data': df_html})
 
-def history_close_best(request):
-    df_html = test_django.pd_to_html2(live=False)
+
+def history_best_all(request):
+    df_html = test_django.html_best_limits_all(live=False)
     return render(request, 'tset/history_best_limits.html', {'external_data': df_html})
+
 
 def close_best(request):
     event_list = Event.objects.all()
     return render(request, 'tset/close_best.html',
                   {})
+
 
 def external_data_view(request):
     with connections['external_db'].cursor() as cursor:
@@ -41,6 +47,7 @@ def external_data_view(request):
                       'zOrdMeOf': row[6], 'qTitMeOf': row[7]} for row in rows]
 
     return render(request, 'tset/close_best.html', {'external_data': external_data})
+
 
 def history(request):
     with connections['external_manager'].cursor() as cursor:
@@ -58,12 +65,14 @@ def history_detail_view(request, index):
     df_html = test_django.history_to_html(index, "moneymaker")
     return render(request, 'tset/history_index.html', {'external_data': df_html})
 
+
 def close_best_limits(request, index):
     if index == 0:
         pass
     else:
         df_html = test_django.close_best_limit_tohtml(index, "close_best_limits")
     return render(request, 'tset/history_best_limits.html', {'external_data': df_html})
+
 
 def financial_records_view(request):
     # Fetch all financial records from the database
@@ -75,6 +84,7 @@ def financial_records_view(request):
 def close_best_2(request):
     data = best_limits.get_related_articles.raw("select * from nmd46348559193224090")
     return render(request, 'tset/close_best.html', {'data': data})
+
 
 def home(request, year=datetime.now().year, month=datetime.now().strftime('%B')):
     name = "John"
