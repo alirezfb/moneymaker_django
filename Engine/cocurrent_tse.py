@@ -12,6 +12,16 @@ except:
     import extract_save
     import my_sql
 
+
+"""def multiprocess_return(index_list, definition):
+    with ProcessPoolExecutor(max_workers=20) as exc1:
+        locals()[func_name]("Alice")
+        exc1.map(definition, responce_list, index_list)
+        exc1.shutdown()
+        pass
+    return None"""
+
+
 def live_update(index_list, state_check=True):
     start_time_t = datetime.now()
     market_state = extract_save.UrlFetcher.market_overview(only_state=True)
@@ -57,9 +67,13 @@ def infinity_run():
                 live_update(index_list, state_check=True)
                 market_state = extract_save.UrlFetcher.market_overview(only_state=True)
                 live_best_limits = tse_analize.dataframe_return(index_list, "sum_live_best_limit")
-                my_sql.Write.all_best_limits(live_best_limits, live=True)
+                print(live_best_limits)
+                print('ffff')
+                my_sql.Write.all_best_limits(live_best_limits, live=True, truncate=True)
                 temp_index = tse_analize.list_compare(index_list, "read_sum_live_best_limit",
                                                       "latest_ha_be_ho")
+                print(temp_index)
+                print('vbb')
                 live_best_limits = tse_analize.dataframe_return(temp_index, "sum_live_best_limit")
                 my_sql.Write.all_best_limits(live_best_limits, live=True, truncate=True)
                 sleep(190)

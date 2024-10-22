@@ -597,7 +597,7 @@ class scripts:
                     "<" + self.space_char +
                     str(self.time.latest_ten_minutes()))
 
-        def interval_between(self, column_name, interval, unit="MINUTES"):
+        def interval_between(self, column_name, interval, unit="MINUTE"):
             return column_name + " BETWEEN NOW() - INTERVAL " + str(interval) +\
                 self.space_char + unit + " AND NOW()"
 
