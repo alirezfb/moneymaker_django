@@ -504,6 +504,107 @@ class Write:
             return 0
 
 
+class binance_object:
+    def __init__(self):
+        pass
+
+    class chart_data:
+        def __init__(self):
+            self.date_field = 'open_time'
+            self.obj_type = 'cryptocurrency'
+            self.df_schema = 'crypto_chart_data'
+
+
+def write_anything(org_dataframe, tbl_name, obj, existing_dates=None):
+    # making a copy out of the original dataframe to protect form changes
+    dataframe = org_dataframe.copy(deep=False)
+    schema = obj.df_schema
+    date_field = obj.date_field
+    for i in range(0, 2):
+        try:
+            # error check variable
+            error_check = False
+            # checking if the table exists and create it if not
+            #HistoryTableCreate.price_table(index)
+            row_save_count = 0
+            # connecting to database
+            engine = create_engine("mariadb+mariadbconnector://" +
+                                   "root:Unique2213@127.0.0.1:3306/" +
+                                   schema)
+            # adding to database
+            if existing_dates is not None and error_check is False:
+                # declaring variables
+                loop_check = True
+                loop_counter = 0
+                last_saved_date = existing_dates[0]
+                # checking if there's any last dates saved and list length
+                if existing_dates[0] != 0 and len(existing_dates) > 0:
+                    # finding columns that needs to be saved
+                    while loop_check is True:
+                        if last_saved_date >= dataframe.loc[loop_counter, date_field]:
+                            loop_check = False
+                            pass
+                        elif loop_counter > 299:
+                            loop_check = False
+                            pass
+                        else:
+                            loop_counter += 1
+                            pass
+                        pass
+                    # saving to database
+                    if loop_counter < 1:
+                        # for when there isn't any existing records in db
+                        row_save_count = dataframe.to_sql(name=tbl_name, con=engine,
+                                                          if_exists='append', index=False)
+                        pass
+                    else:
+                        """for when there are some records in db and 
+                            to sql function saves only columns that
+                            are not saved"""
+                        dataframe.drop(dataframe.index[loop_counter:], axis=0, inplace=True)
+                        row_save_count = dataframe.to_sql(name=tbl_name, con=engine,
+                                                          if_exists='append', index=False)
+                        pass
+                    pass
+                else:
+                    loop_counter = dataframe.to_sql(name=tbl_name, con=engine,
+                                               if_exists='append', index=False, chunksize=1)
+                    pass
+            # there was an error and data needs to be saved in static form
+            #elif search.table(index=index) is True:
+            #counter = dataframe.to_sql(name=namad_symbol, con=engine,
+            #if_exists='append', index=False,
+            #chunksize=1)
+            else:
+                loop_counter = dataframe.to_sql(name=tbl_name, con=engine,
+                                           if_exists='append', index=False)
+                pass
+            # killing the engine
+            engine.dispose()
+            del engine
+            # return saved entries
+            return loop_counter
+        except:
+            error_check = True
+            if i == 0:
+                dataframe = org_dataframe.copy(deep=False)
+                dataframe.fillna(0)
+                pass
+            else:
+                try:
+                    engine.dispose()
+                    del engine
+                    pass
+                except:
+                    pass
+                log.error_write(tbl_name)
+                return 0
+                pass
+            pass
+        pass
+    pass
+
+
 class modification:
 
     def truncate(schema, tbl_name):
@@ -533,6 +634,7 @@ class modification:
             log.error_write(search.index(''))
             return False
         pass
+
     def drop(index, address):
         namad_symbol = search.names(index)
         existance = search.table(table_name=namad_symbol)
@@ -1003,11 +1105,11 @@ class count:
 
 class search:
 
-    def script(schema:str, script:str, df_return=True):
+    def script(schema: str, script: str, df_return=True):
         try:
             if df_return is True:
                 engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                       "/"+schema)
+                                       "/" + schema)
 
                 return_object = pd.read_sql(script, engine)
                 engine.dispose()
@@ -1047,6 +1149,7 @@ class search:
             log.error_write(search.index(''))
             return None
         pass
+
     def any_table_records(namad_index, table_name, selected_index, schema, searched_item=None, searched_index=None):
         error_count = 0
         while error_count < 7:
@@ -1821,12 +1924,12 @@ class black_list:
             return True
         pass
 
-    def write(pd_dataframe:pandas.DataFrame):
+    def write(pd_dataframe: pandas.DataFrame):
         try:
             index = pd_dataframe.loc[0, 'insCode']
             engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/manager")
             result = pd_dataframe.to_sql(name='tblblacklist', con=engine,
-                                           if_exists='append', index=False)
+                                         if_exists='append', index=False)
             # killing the engine
             engine.dispose()
             del engine
@@ -1836,7 +1939,6 @@ class black_list:
             log.error_write(index)
             return None
         pass
-
 
 
 def duplicate_remover(namad_entry):
@@ -1895,6 +1997,7 @@ class locator():
     @staticmethod
     def temp_database():
         return r'C:\Moneymaker2.0\database\temp.db'
+
 
 # def sqlLocator():
 
