@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""# -*- coding: utf-8 -*-
 """
 in module baraye motasel shodan be tse va estekhraje
 etelaat az oon tarahi shode
@@ -188,7 +188,7 @@ class Write:
                                                               if_exists='append', index=False)
                             pass
                         else:
-                            """for when there are some records in db and 
+                            """for when there are some records in db and
                                 to sql function saves only columns that
                                 are not saved"""
                             dataframe.drop(dataframe.index[counter:], axis=0, inplace=True)
@@ -411,7 +411,7 @@ class Write:
                                                               if_exists='append', index=False)
                             pass
                         else:
-                            """for when there are some records in db and 
+                            """for when there are some records in db and
                                 to sql function saves only columns that
                                 are not saved"""
                             dataframe.drop(dataframe.index[counter:], axis=0, inplace=True)
@@ -504,152 +504,20 @@ class Write:
             return 0
 
 
-class objects_properties:
+class binance_object:
     def __init__(self):
         pass
 
-    class crypto:
+    class chart_data:
         def __init__(self):
-            pass
-
-        obj_type = 'crypto'
-
-        class chart_data:
-            def __init__(self):
-                pass
-
-            date_field = 'open_time'
-            df_schema = 'crypto_chart_data'
-            obj_type = 'crypto'
-
-    class tse:
-        def __init__(self):
-            pass
-
-        class moneymaker_history:
-            def __init__(self):
-                pass
-
-            date_field = 'dEven'
-            obj_type = 'tse'
-            schema = 'moneymaker'
-            table_create_columns = ("dEven varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
-                                    "buy_I_Count varchar(20) NOT NULL,"
-                                    "buy_I_Volume varchar(20) NOT NULL,"
-                                    "sell_I_Count varchar(20) NOT NULL,"
-                                    "sell_I_Volume varchar(20) NOT NULL,"
-                                    "buy_N_Count varchar(20) NOT NULL,"
-                                    "buy_N_Volume varchar(20) NOT NULL,"
-                                    "sell_N_Count varchar(20) NOT NULL,"
-                                    "sell_N_Volume varchar(20) NOT NULL,"
-                                    "buy_I_Value varchar(20) NOT NULL,"
-                                    "buy_N_Value varchar(20) NOT NULL,"
-                                    "sell_I_Value varchar(20) NOT NULL,"
-                                    "sell_N_Value varchar(20) NOT NULL,"
-                                    "priceChange varchar(20) NOT NULL,"
-                                    "priceMin varchar(20) NOT NULL,"
-                                    "priceMax varchar(20) NOT NULL,"
-                                    "pClosing varchar(20) NOT NULL,"
-                                    "zTotTran varchar(20) NOT NULL,"
-                                    "qTotTran5J varchar(20) NOT NULL,"
-                                    "qTotCap varchar(20) NOT NULL")
-
-        class moneymaker_live:
-            def __init__(self):
-                pass
-
-            date_field = 'finalLastDate'
-            time_field = 'lastHEven'
-            obj_type = 'tse'
-            schema = 'live_moneymaker_update'
-            table_create_columns = "finalLastDate varchar(20) NOT NULL," \
-                                   "lastHEven varchar(20) UNIQUE NOT NULL PRIMARY KEY," \
-                                   "buy_CountI varchar(20) NOT NULL," \
-                                   "buy_I_Volume varchar(20) NOT NULL," \
-                                   "sell_CountI varchar(20) NOT NULL," \
-                                   "sell_I_Volume varchar(20) NOT NULL," \
-                                   "buy_CountN varchar(20) NOT NULL," \
-                                   "buy_N_Volume varchar(20) NOT NULL," \
-                                   "sell_CountN varchar(20) NOT NULL," \
-                                   "priceYesterday varchar(20) NOT NULL," \
-                                   "priceFirst varchar(20) NOT NULL," \
-                                   "sell_I_Value varchar(20) NOT NULL," \
-                                   "sell_N_Value varchar(20) NOT NULL," \
-                                   "priceChange varchar(20) NOT NULL," \
-                                   "priceMin varchar(20) NOT NULL," \
-                                   "priceMax varchar(20) NOT NULL," \
-                                   "pClosing varchar(20) NOT NULL," \
-                                   "pDrCotVal varchar(20) NOT NULL," \
-                                   "zTotTran varchar(20) NOT NULL," \
-                                   "qTotTran5J varchar(20) NOT NULL," \
-                                   "qTotCap varchar(20) NOT NULL"
-
-        class analyze_history:
-            def __init__(self):
-                pass
-
-            date_field = 'dEven'
-            obj_type = 'tse'
-            schema = 'analize'
-            table_create_columns = "dEven varchar(20) UNIQUE NOT NULL PRIMARY KEY," \
-                                   "percentage varchar(20) NOT NULL," \
-                                   "ghodrat_kh_ha varchar(20) NOT NULL," \
-                                   "ghodrat_fo_ha varchar(20) NOT NULL," \
-                                   "ghodrat_kh_ho varchar(20) NOT NULL," \
-                                   "ghodrat_fo_ho varchar(20) NOT NULL," \
-                                   "ghodrat_khha_khho varchar(20) NOT NULL," \
-                                   "ghodrat_hjmkhha_hjmkhho varchar(20) NOT NULL," \
-                                   "ghodrat_foha_foho varchar(20) NOT NULL," \
-                                   "ghodrat_hjmfoha_hjmfoho varchar(20) NOT NULL"
-
-        class analyze_live:
-            def __init__(self):
-                pass
-
-            date_field = 'finalLastDate'
-            time_field = 'lastHEven'
-            obj_type = 'tse'
-            schema = 'live_analyze_update'
-
-        class best_limits_live:
-            def __init__(self):
-                pass
-
-            field = 'datetime'
-            obj_type = 'tse'
-            schema = 'best_limits'
-            table_create_columns = ("datetime  timestamp default current_timestamp() null,"
-                                    "number mediumint null,"
-                                    "qTitMeDem int null,"
-                                    "zOrdMeDem mediumint null,"
-                                    "pMeDem mediumint null,"
-                                    "pMeOf mediumint null,"
-                                    "zOrdMeOf mediumint null,"
-                                    "qTitMeOf int null")
-
-        class best_limits_history:
-            def __init__(self):
-                pass
-
-            date_field = ''
-            obj_type = 'tse'
-            schema = 'close_best_limits'
-            table_create_columns = ("number bigint null,"
-                                    "qTitMeDem bigint null,"
-                                    "zOrdMeDem bigint null,"
-                                    "pMeDem double null,"
-                                    "pMeOf double null,"
-                                    "zOrdMeOf bigint null,"
-                                    "qTitMeOf bigint null")
+            self.date_field = 'open_time'
+            self.obj_type = 'cryptocurrency'
+            self.df_schema = 'crypto_chart_data'
 
 
-
-
-
-def write_table(dataframe, tbl_name, obj, existing_dates=None):
-    # making a copy to protect form changes
-    clone_dataframe = dataframe.copy(deep=False)
-    # extract schema and datefield name from object
+def write_anything(org_dataframe, tbl_name, obj, existing_dates=None):
+    # making a copy out of the original dataframe to protect form changes
+    dataframe = org_dataframe.copy(deep=False)
     schema = obj.df_schema
     date_field = obj.date_field
     for i in range(0, 2):
@@ -673,7 +541,7 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None):
                 if existing_dates[0] != 0 and len(existing_dates) > 0:
                     # finding columns that needs to be saved
                     while loop_check is True:
-                        if last_saved_date >= clone_dataframe.loc[loop_counter, date_field]:
+                        if last_saved_date >= dataframe.loc[loop_counter, date_field]:
                             loop_check = False
                             pass
                         elif loop_counter > 299:
@@ -686,21 +554,21 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None):
                     # saving to database
                     if loop_counter < 1:
                         # for when there isn't any existing records in db
-                        row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                                if_exists='append', index=False)
+                        row_save_count = dataframe.to_sql(name=tbl_name, con=engine,
+                                                          if_exists='append', index=False)
                         pass
                     else:
-                        """for when there are some records in db and 
+                        """for when there are some records in db and
                             to sql function saves only columns that
                             are not saved"""
-                        clone_dataframe.drop(clone_dataframe.index[loop_counter:], axis=0, inplace=True)
-                        row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                                if_exists='append', index=False)
+                        dataframe.drop(dataframe.index[loop_counter:], axis=0, inplace=True)
+                        row_save_count = dataframe.to_sql(name=tbl_name, con=engine,
+                                                          if_exists='append', index=False)
                         pass
                     pass
                 else:
-                    loop_counter = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                          if_exists='append', index=False, chunksize=1)
+                    loop_counter = dataframe.to_sql(name=tbl_name, con=engine,
+                                               if_exists='append', index=False, chunksize=1)
                     pass
             # there was an error and data needs to be saved in static form
             #elif search.table(index=index) is True:
@@ -708,8 +576,8 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None):
             #if_exists='append', index=False,
             #chunksize=1)
             else:
-                loop_counter = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                      if_exists='append', index=False)
+                loop_counter = dataframe.to_sql(name=tbl_name, con=engine,
+                                           if_exists='append', index=False)
                 pass
             # killing the engine
             engine.dispose()
@@ -719,8 +587,8 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None):
         except:
             error_check = True
             if i == 0:
-                clone_dataframe = org_dataframe.copy(deep=False)
-                clone_dataframe.fillna(0)
+                dataframe = org_dataframe.copy(deep=False)
+                dataframe.fillna(0)
                 pass
             else:
                 try:
@@ -1551,7 +1419,7 @@ class check:
 
 
 """
-in tabe baraye khandane nam haye namadha az table namad 
+in tabe baraye khandane nam haye namadha az table namad
 va sakhtane tabali jodagane baraye harkodoom az namad ha
 tarahi shode"""
 
@@ -1640,47 +1508,6 @@ def close_price_update_table():
             pass
         pass
     return "Done"
-
-
-def create_table(obj, tbl_name=None, full_index=False, tse=True):
-    try:
-        # when we want to create a full database for tse
-        if full_index is True:
-            if tse is True:
-                index_list = read.index()
-            else:
-                #index_list = read.symbols()
-                pass
-        else:
-            index_list = [tbl_name]
-        # engine
-        conn = mariadb.connect(
-            user="root",
-            password="Unique2213",
-            host="localhost",
-            port=3306,
-            database="moneymaker"
-        )
-        for i in index_list:
-            if search_table(tbl_name, obj) is False:
-                try:
-                    name = "nmd" + str(i)
-                    cur = conn.cursor()
-                    cur.execute("CREATE TABLE IF NOT EXISTS %s (" +
-                                obj.table_create_columns + ")"
-                                % tbl_name)
-                    conn.commit()
-                except:
-                    log.error_write(i)
-                    continue
-            else:
-                #badan bayad gozine debug ezafe beshe
-                continue
-        conn.close()
-        return True
-    except:
-        log.error_write('')
-        return None
 
 
 class HistoryTableCreate:
@@ -2038,40 +1865,6 @@ class log:
         pass
 
 
-def search_table(tbl_name, obj):
-    schema = obj.schema
-    try:
-        # baz kardane sql va khandane tblnamadhatemp
-        conn = mariadb.connect(
-            user="root",
-            password="Unique2213",
-            host="localhost",
-            port=3306,
-            database=schema
-        )
-        cur = conn.cursor()
-        cur.execute(("SHOW TABLES FROM %s LIKE '%s'"
-                     % (schema,
-                        tbl_name)))
-        conn.commit()
-        conn.close()
-        del conn
-        if cur.fetchone() is None:
-            return False
-        else:
-            return True
-    except:
-        try:
-            conn.commit()
-            conn.close()
-            del conn
-            pass
-        except:
-            pass
-        log.error_write(search.index(tbl_name))
-        return None
-
-
 class black_list:
 
     @staticmethod
@@ -2235,7 +2028,4 @@ class schemas:
     @staticmethod
     def close_best_limits():
         return "close_best_limits"
-
-
-b = objects_properties.tse.best_limits_history.table_create_columns
-print(b)
+"""
