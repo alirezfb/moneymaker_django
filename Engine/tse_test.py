@@ -260,11 +260,18 @@ def history_write__(response_list, index):
     if response_list is None:
         return None
     else:
+        # name
+        tbl_name = 'nmd' + str(index)
+        moneymaker_obj = my_sql.obj_properties.tse.moneymaker_history
+        best_limit_obj = my_sql.obj_properties.tse.best_limits_history
+        analyze_obj = my_sql.obj_properties.tse.analyze_history
+        sum_best_obj = my_sql.obj_properties.tse.sum_close_best_limits
         history_object = tse_connect.history_database(index, save_limit=800)
         # getting saved dates of an index in main database
         main_date_list = my_sql.search.dates(index)
         # getting saved dates of an index in analize database
         analyze_date_list = my_sql.search.dates(index, schema="analize")
+        # extracting lists form lists
         client_response = response_list[0]
         closing_response = response_list[1]
         best_limits_response = response_list[2]
@@ -273,24 +280,26 @@ def history_write__(response_list, index):
         elif main_date_list[0] == tse_time.day_subtract(days_number=1, holiday_check=True):
             return None
         else:
+            # creating dataframe
             pd_dataframe = history_object.dataframe_closing_client(closing_response, client_response)
             best_limits_dataframe = history_object.dataframe_best_limits(best_limits_response)
             del client_response, closing_response, best_limits_response
             if pd_dataframe is None:
                 return None
             else:
-                my_sql.Write.HistoryMoneymaker(pd_dataframe, index, tbl_dates=main_date_list)
-                my_sql.Write.close_best_limits(index, best_limits_dataframe)
+                my_sql.write_table(pd_dataframe, tbl_name, moneymaker_obj, main_date_list)
+                my_sql.write_table(best_limits_dataframe, tbl_name, best_limit_obj, truncate=True)
                 analyze_df: pandas.DataFrame = tse_analize.list_calculate_pd_2(index, pd_dataframe=pd_dataframe, live=False)
                 del pd_dataframe, best_limits_dataframe
                 if analyze_df is None:
                     return None
                 elif analyze_date_list[0] == analyze_df.loc[0, 'dEven']:
                     return None
-                result = my_sql.Write.analize_list_daily(analyze_df, index=index, tbl_dates=analyze_date_list)
+                # analyze write
+                result = my_sql.write_table(analyze_df, tbl_name, analyze_obj, analyze_date_list)
                 scripts = tse_analize.scripts(index=index)
-                sum_best_limits = scripts.sum_best_limits(live=False)
-                my_sql.Write.all_best_limits(sum_best_limits, live=False, truncate=True)
+                sum_best_limits = scripts.sum_close_best_limits(live=False)
+                my_sql.write_table(sum_best_limits, tbl_name, sum_best_obj, truncate=True)
                 print(str(index) + " Completed " + str(result))
                 return result
 

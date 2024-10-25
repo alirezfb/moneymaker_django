@@ -66,7 +66,6 @@ def list_calculate_pd_2(index, pd_dataframe: pd.DataFrame, live: bool):
         temp_df = pd.DataFrame.from_dict(dic)
         del dic
         if live is False:
-            temp_df.insert(1, 'insCode', pd_dataframe['insCode'])
             temp_df.insert(1, 'dEven', pd_dataframe['dEven'])
             pass
         else:
@@ -680,9 +679,9 @@ class scripts:
             my_sql.log.error_write(self.index)
             return None"""
 
-    def sum_best_limits(self, live=True):
+    def sum_close_best_limits(self, live=True):
         try:
-            script = self.objects.select_script(select_group=self.objects.columns.best_limits()) +\
+            script = self.objects.select_script(select_group=self.objects.columns.best_limits(sum_group=True)) +\
                      self.objects.from_script(name=self.name) +\
                      self.objects.limit_script(1)
             if live is True:

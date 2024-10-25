@@ -67,22 +67,17 @@ def infinity_run():
                 live_update(index_list, state_check=True)
                 market_state = extract_save.UrlFetcher.market_overview(only_state=True)
                 live_best_limits = tse_analize.dataframe_return(index_list, "sum_live_best_limit")
-                print(live_best_limits)
-                print('ffff')
                 my_sql.Write.all_best_limits(live_best_limits, live=True, truncate=True)
                 temp_index = tse_analize.list_compare(index_list, "read_sum_live_best_limit",
                                                       "latest_ha_be_ho")
-                print(temp_index)
-                print('vbb')
                 live_best_limits = tse_analize.dataframe_return(temp_index, "sum_live_best_limit")
                 my_sql.Write.all_best_limits(live_best_limits, live=True, truncate=True)
                 sleep(190)
                 pass
             if market_state is False:
                 print("MARKET CLOSED")
-                my_sql.HistoryTableCreate.price_table()
-                my_sql.HistoryTableCreate.analize_table()
                 history_update(index_list)
+                sleep(200)
                 temp_index = tse_analize.list_compare(index_list, "close_best_limit", "close_ghodrat_kh_ha")
                 live_best_limits = tse_analize.dataframe_return(temp_index, "all_close_best_limit")
                 my_sql.Write.all_best_limits(live_best_limits, live=False)

@@ -1,4 +1,3 @@
-import sys
 
 import requests
 from time import sleep
@@ -78,10 +77,24 @@ class binance_connect:
             list_temp: list = url_response.json()
             list_temp.reverse()
             df = pd.DataFrame(list_temp, columns=self.chart_columns)
-            binance_connect.__open_time_convert(self, df)
+            df = binance_connect.__numeric_convert(self, df)
+            df = binance_connect.__open_time_convert(self, df)
             return df
         except:
             # error handling
+            my_sql.log.error_write(self.symbol)
+            return None
+
+    def __numeric_convert(self, df):
+        try:
+            df['open'] = pd.to_numeric(df['open'], downcast='integer', errors='coerce')
+            df['high'] = pd.to_numeric(df['high'], downcast='integer', errors='coerce')
+            df['low'] = pd.to_numeric(df['low'], downcast='integer', errors='coerce')
+            df['close'] = pd.to_numeric(df['close'], downcast='integer', errors='coerce')
+            df['first_sym_vol'] = pd.to_numeric(df['first_sym_vol'], downcast='integer', errors='coerce')
+            df['second_sym_vol'] = pd.to_numeric(df['second_sym_vol'], downcast='integer', errors='coerce')
+            return df
+        except:
             my_sql.log.error_write(self.symbol)
             return None
 
@@ -103,4 +116,4 @@ b = a.dataframe_chart_date(c)
 temp_list = c.json()
 print(c.json())
 print(b)
-my_sql.write_table(b, "btcusdt", my_sql.binance_object.chart_data())
+my_sql.write_table(b, "btcusdt", my_sql.obj_properties.crypto.chart_data())

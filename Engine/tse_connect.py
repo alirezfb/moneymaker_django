@@ -343,7 +343,7 @@ class history_database:
         self.urls = urls(index)
         self.save_limit = save_limit
         self.drop_columns_closing_price = ['priceYesterday', 'priceFirst', 'last', 'id',
-                                           'iClose', 'yClose', 'pDrCotVal', 'hEven']
+                                           'iClose', 'yClose', 'pDrCotVal', 'hEven', 'insCode']
         self.drop_columns_client_types = ['recDate', 'insCode']
         self.drop_columns_best_limits = ['insCode']
         self.json_name_closing_price = 'closingPriceDaily'

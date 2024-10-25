@@ -504,7 +504,7 @@ class Write:
             return 0
 
 
-class objects_properties:
+class obj_properties:
     def __init__(self):
         pass
 
@@ -515,21 +515,29 @@ class objects_properties:
         obj_type = 'crypto'
 
         class chart_data:
-            def __init__(self):
-                pass
-
             date_field = 'open_time'
-            df_schema = 'crypto_chart_data'
+            schema = 'crypto_chart_data'
             obj_type = 'crypto'
+            table_create_columns = ("open_time datetime PRIMARY KEY UNIQUE null,"
+                                    "open double null,"
+                                    "high double null,"
+                                    "low double null,"
+                                    "close double null,"
+                                    "first_sym_vol double null,"
+                                    "close_time bigint null,"
+                                    "second_sym_vol double null,"
+                                    "u0 bigint null,"
+                                    "u1 text null,"
+                                    "u2 text null,"
+                                    "u3 text null")
 
     class tse:
         def __init__(self):
             pass
 
-        class moneymaker_history:
-            def __init__(self):
-                pass
+        obj_type = 'tse'
 
+        class moneymaker_history:
             date_field = 'dEven'
             obj_type = 'tse'
             schema = 'moneymaker'
@@ -555,39 +563,33 @@ class objects_properties:
                                     "qTotCap varchar(20) NOT NULL")
 
         class moneymaker_live:
-            def __init__(self):
-                pass
-
             date_field = 'finalLastDate'
             time_field = 'lastHEven'
             obj_type = 'tse'
             schema = 'live_moneymaker_update'
-            table_create_columns = "finalLastDate varchar(20) NOT NULL," \
-                                   "lastHEven varchar(20) UNIQUE NOT NULL PRIMARY KEY," \
-                                   "buy_CountI varchar(20) NOT NULL," \
-                                   "buy_I_Volume varchar(20) NOT NULL," \
-                                   "sell_CountI varchar(20) NOT NULL," \
-                                   "sell_I_Volume varchar(20) NOT NULL," \
-                                   "buy_CountN varchar(20) NOT NULL," \
-                                   "buy_N_Volume varchar(20) NOT NULL," \
-                                   "sell_CountN varchar(20) NOT NULL," \
-                                   "priceYesterday varchar(20) NOT NULL," \
-                                   "priceFirst varchar(20) NOT NULL," \
-                                   "sell_I_Value varchar(20) NOT NULL," \
-                                   "sell_N_Value varchar(20) NOT NULL," \
-                                   "priceChange varchar(20) NOT NULL," \
-                                   "priceMin varchar(20) NOT NULL," \
-                                   "priceMax varchar(20) NOT NULL," \
-                                   "pClosing varchar(20) NOT NULL," \
-                                   "pDrCotVal varchar(20) NOT NULL," \
-                                   "zTotTran varchar(20) NOT NULL," \
-                                   "qTotTran5J varchar(20) NOT NULL," \
-                                   "qTotCap varchar(20) NOT NULL"
+            table_create_columns = ("finalLastDate varchar(20) NOT NULL," 
+                                   "lastHEven varchar(20) UNIQUE NOT NULL PRIMARY KEY," 
+                                   "buy_CountI varchar(20) NOT NULL," 
+                                   "buy_I_Volume varchar(20) NOT NULL," 
+                                   "sell_CountI varchar(20) NOT NULL," 
+                                   "sell_I_Volume varchar(20) NOT NULL," 
+                                   "buy_CountN varchar(20) NOT NULL," 
+                                   "buy_N_Volume varchar(20) NOT NULL," 
+                                   "sell_CountN varchar(20) NOT NULL," 
+                                   "priceYesterday varchar(20) NOT NULL," 
+                                   "priceFirst varchar(20) NOT NULL," 
+                                   "sell_I_Value varchar(20) NOT NULL," 
+                                   "sell_N_Value varchar(20) NOT NULL," 
+                                   "priceChange varchar(20) NOT NULL," 
+                                   "priceMin varchar(20) NOT NULL," 
+                                   "priceMax varchar(20) NOT NULL," 
+                                   "pClosing varchar(20) NOT NULL," 
+                                   "pDrCotVal varchar(20) NOT NULL," 
+                                   "zTotTran varchar(20) NOT NULL," 
+                                   "qTotTran5J varchar(20) NOT NULL," 
+                                   "qTotCap varchar(20) NOT NULL")
 
         class analyze_history:
-            def __init__(self):
-                pass
-
             date_field = 'dEven'
             obj_type = 'tse'
             schema = 'analize'
@@ -603,19 +605,13 @@ class objects_properties:
                                    "ghodrat_hjmfoha_hjmfoho varchar(20) NOT NULL"
 
         class analyze_live:
-            def __init__(self):
-                pass
-
             date_field = 'finalLastDate'
             time_field = 'lastHEven'
             obj_type = 'tse'
             schema = 'live_analyze_update'
 
         class best_limits_live:
-            def __init__(self):
-                pass
-
-            field = 'datetime'
+            date_field = 'datetime'
             obj_type = 'tse'
             schema = 'best_limits'
             table_create_columns = ("datetime  timestamp default current_timestamp() null,"
@@ -628,9 +624,6 @@ class objects_properties:
                                     "qTitMeOf int null")
 
         class best_limits_history:
-            def __init__(self):
-                pass
-
             date_field = ''
             obj_type = 'tse'
             schema = 'close_best_limits'
@@ -642,22 +635,34 @@ class objects_properties:
                                     "zOrdMeOf bigint null,"
                                     "qTitMeOf bigint null")
 
+        class sum_close_best_limits:
+            date_field = ''
+            obj_type = 'tse'
+            schema = 'sum_close_best_limits'
+            table_create_columns = ("qTitMeDem int null,"
+                                    "zOrdMeDem mediumint null,"
+                                    "pMeDem mediumint null,"
+                                    "pMeOf mediumint null,"
+                                    "zOrdMeOf mediumint null,"
+                                    "qTitMeOf int null")
 
 
-
-
-def write_table(dataframe, tbl_name, obj, existing_dates=None):
+def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False):
     # making a copy to protect form changes
     clone_dataframe = dataframe.copy(deep=False)
     # extract schema and datefield name from object
-    schema = obj.df_schema
-    date_field = obj.date_field
     for i in range(0, 2):
         try:
+            schema = obj.schema
+            date_field = obj.date_field
+            if truncate is True:
+                modification.truncate(schema, tbl_name)
+            else:
+                pass
             # error check variable
             error_check = False
             # checking if the table exists and create it if not
-            #HistoryTableCreate.price_table(index)
+            create_table(obj, tbl_name)
             row_save_count = 0
             # connecting to database
             engine = create_engine("mariadb+mariadbconnector://" +
@@ -675,20 +680,15 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None):
                     while loop_check is True:
                         if last_saved_date >= clone_dataframe.loc[loop_counter, date_field]:
                             loop_check = False
-                            pass
                         elif loop_counter > 299:
                             loop_check = False
-                            pass
                         else:
                             loop_counter += 1
-                            pass
-                        pass
                     # saving to database
                     if loop_counter < 1:
                         # for when there isn't any existing records in db
                         row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
                                                                 if_exists='append', index=False)
-                        pass
                     else:
                         """for when there are some records in db and 
                             to sql function saves only columns that
@@ -696,66 +696,61 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None):
                         clone_dataframe.drop(clone_dataframe.index[loop_counter:], axis=0, inplace=True)
                         row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
                                                                 if_exists='append', index=False)
-                        pass
-                    pass
                 else:
-                    loop_counter = clone_dataframe.to_sql(name=tbl_name, con=engine,
+                    row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
                                                           if_exists='append', index=False, chunksize=1)
-                    pass
             # there was an error and data needs to be saved in static form
-            #elif search.table(index=index) is True:
-            #counter = dataframe.to_sql(name=namad_symbol, con=engine,
-            #if_exists='append', index=False,
-            #chunksize=1)
+            elif search_table(tbl_name, obj) is True:
+                row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
+                                           if_exists='append', index=False,
+                                           chunksize=1)
             else:
-                loop_counter = clone_dataframe.to_sql(name=tbl_name, con=engine,
+                row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
                                                       if_exists='append', index=False)
-                pass
             # killing the engine
             engine.dispose()
             del engine
             # return saved entries
-            return loop_counter
+            return row_save_count
         except:
+            log.error_write(tbl_name)
             error_check = True
             if i == 0:
-                clone_dataframe = org_dataframe.copy(deep=False)
+                clone_dataframe = dataframe.copy(deep=False)
                 clone_dataframe.fillna(0)
-                pass
             else:
                 try:
                     engine.dispose()
                     del engine
-                    pass
                 except:
                     pass
-                log.error_write(tbl_name)
                 return 0
-                pass
-            pass
-        pass
-    pass
+
+
 
 
 class modification:
 
     def truncate(schema, tbl_name):
         try:
-            script = "truncate table " + tbl_name
-            # baz kardane sql va khandane tblnamadhatemp
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database=schema
-            )
-            cur = conn.cursor()
-            cur.execute(script)
-            conn.commit()
-            conn.close()
-            del conn
-            return True
+            if search_table(tbl_name, schema=schema) is False:
+                return None
+            else:
+                script = "truncate table " + tbl_name
+                # baz kardane sql va khandane tblnamadhatemp
+                conn = mariadb.connect(
+                    user="root",
+                    password="Unique2213",
+                    host="localhost",
+                    port=3306,
+                    database=schema
+                )
+                cur = conn.cursor()
+                cur.execute(script)
+                conn.commit()
+                conn.close()
+                del conn
+                return True
         except:
             try:
                 conn.commit()
@@ -1659,16 +1654,15 @@ def create_table(obj, tbl_name=None, full_index=False, tse=True):
             password="Unique2213",
             host="localhost",
             port=3306,
-            database="moneymaker"
+            database=obj.schema
         )
         for i in index_list:
             if search_table(tbl_name, obj) is False:
                 try:
-                    name = "nmd" + str(i)
                     cur = conn.cursor()
-                    cur.execute("CREATE TABLE IF NOT EXISTS %s (" +
-                                obj.table_create_columns + ")"
-                                % tbl_name)
+                    script = ("CREATE TABLE IF NOT EXISTS %s ( \n" % i +
+                              obj.table_create_columns + "\n )")
+                    cur.execute(script)
                     conn.commit()
                 except:
                     log.error_write(i)
@@ -1677,6 +1671,7 @@ def create_table(obj, tbl_name=None, full_index=False, tse=True):
                 #badan bayad gozine debug ezafe beshe
                 continue
         conn.close()
+        del conn
         return True
     except:
         log.error_write('')
@@ -2038,8 +2033,11 @@ class log:
         pass
 
 
-def search_table(tbl_name, obj):
-    schema = obj.schema
+def search_table(tbl_name, obj=None, schema=None):
+    if obj is not None:
+        schema = obj.schema
+    else:
+        pass
     try:
         # baz kardane sql va khandane tblnamadhatemp
         conn = mariadb.connect(
@@ -2236,6 +2234,3 @@ class schemas:
     def close_best_limits():
         return "close_best_limits"
 
-
-b = objects_properties.tse.best_limits_history.table_create_columns
-print(b)
