@@ -1,508 +1,21 @@
 # -*- coding: utf-8 -*-
-"""
-in module baraye motasel shodan be tse va estekhraje
-etelaat az oon tarahi shode
-"""
-import numpy
-
 """MARIADB COMMANDS
     SHOW STATUS WHERE `variable_name` = 'Threads_connected';
     kill USER username;
 """
-import traceback
+
 import mariadb
 import pandas
 from sqlalchemy import create_engine
-import _sqlite3 as sql
 import re
-import logging
-import os
 import traceback
 import sys
-from threading import Thread
-from multiprocessing import pool
-from multiprocessing.dummy import Pool as ThreadPool
 from time import sleep
-
 import random
-from multiprocessing import freeze_support
 import pandas as pd
 
 
 # START
-
-class Write:
-
-    def daily_operation_pd_2_old(index, index_list, pd_df):
-        conn = mariadb.connect(
-            user="root",
-            password="Unique2213",
-            host="localhost",
-            port=3306,
-            database="moneymaker"
-        )
-        """pd_df.drop(['priceChange', 'priceMin', 'priceMax', 'buy_I_Value',
-                    'buy_N_Value', 'sell_I_Value', 'sell_N_Value',
-                    'priceYesterday', 'priceFirst', 'last', 'id', 'insCode',
-                    'iClose', 'yClose', 'pDrCotVal', 'recDate', 'hEven'], axis=1, inplace=True)"""
-        cur = conn.cursor()
-        namad_symbol = "nmd" + str(index)
-        date_list = search.dates(index)
-        row_save_count = 0
-        duplicate_date_count: int = 0
-        duplicate_check = False
-        engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/moneymaker")
-        row_save_count = pd_df.to_sql(name=namad_symbol, con=engine, if_exists='append', index=False)
-        for count in index_list:
-            error_count = 0
-            error_message = ""
-            while error_count < 3:
-                try:
-                    if pd_df.loc[0, 'dEven'] in date_list:
-                        duplicate_check = True
-                        error_message = "duplicate date"
-                        break
-                    else:
-                        duplicate_check = False
-                        cur.execute(("INSERT INTO %s ("
-                                     "date,"
-                                     "kharid_haghighi,"
-                                     "hajm_kharid_haghighi,"
-                                     "foroosh_haghighi,"
-                                     "hajm_foroosh_haghighi,"
-                                     "kharid_hoghooghi,"
-                                     "hajm_kharid_hoghooghi,"
-                                     "foroosh_hoghooghi,"
-                                     "hajm_foroosh_hoghooghi,"
-                                     "ghodrat_kharid_haghighi,"
-                                     "ghodrat_foroosh_haghighi,"
-                                     "ghodrat_kharid_hoghooghi,"
-                                     "ghodrat_foroosh_hoghooghi,"
-                                     "kharid_haghighi_hoghooghi,"
-                                     "hajm_kharid_haghighi_hoghooghi,"
-                                     "foroosh_haghighi_hoghooghi,"
-                                     "hajm_foroosh_haghighi_hoghooghi,"
-                                     "percentage,"
-                                     "adj_close_price,"
-                                     "tedad_moamelat,"
-                                     "volume,"
-                                     "namad_value"
-                                     ")"
-                                     "VALUES('%s', '%s', '%s', '%s', '%s',"
-                                     "'%s', '%s', '%s', '%s', '%s', '%s','%s',"
-                                     "'%s' , '%s', '%s', '%s', '%s', '%s','%s',"
-                                     "'%s','%s', '%s' )"
-                                     % (namad_symbol,
-                                        pd_df.loc[count, 'dEven'],
-                                        pd_df.loc[count, 'buy_I_Count'],
-                                        pd_df.loc[count, 'buy_I_Volume'],
-                                        pd_df.loc[count, 'sell_I_Count'],
-                                        pd_df.loc[count, 'sell_I_Volume'],
-                                        pd_df.loc[count, 'buy_N_Count'],
-                                        pd_df.loc[count, 'buy_N_Volume'],
-                                        pd_df.loc[count, 'sell_N_Count'],
-                                        pd_df.loc[count, 'sell_N_Volume'],
-                                        pd_df.loc[count, 'ghodrat_kh_ha'],
-                                        pd_df.loc[count, 'ghodrat_fo_ha'],
-                                        pd_df.loc[count, 'ghodrat_kh_ho'],
-                                        pd_df.loc[count, 'ghodrat_fo_ho'],
-                                        pd_df.loc[count, 'ghodrat_khha_khho'],
-                                        pd_df.loc[count, 'ghodrat_hjmkhha_hjmkhho'],
-                                        pd_df.loc[count, 'ghodrat_foha_foho'],
-                                        pd_df.loc[count, 'ghodrat_hjmfoha_hjmfoho'],
-                                        pd_df.loc[count, 'percentage'],
-                                        pd_df.loc[count, 'pClosing'],
-                                        pd_df.loc[count, 'zTotTran'],
-                                        pd_df.loc[count, 'qTotTran5J'],
-                                        pd_df.loc[count, 'qTotCap']
-                                        )).replace("'", " "))
-                        row_save_count += 1
-                        conn.commit()
-                        break
-                        pass
-                    pass
-                except:
-                    error_count += 1
-                    log.error_write(index)
-                    pass
-                pass
-            if error_count >= 3 or duplicate_check is True:
-                if duplicate_date_count % 4 == 0:
-                    pass
-                else:
-                    pass
-                if duplicate_date_count > 15:
-                    break
-                    pass
-                else:
-                    duplicate_date_count += 1
-                    pass
-            else:
-                pass
-            pass
-        conn.commit()
-        conn.close()
-        return row_save_count
-
-    def HistoryMoneymaker(original_dataframe: pandas.DataFrame, index, tbl_dates: list = None):
-        # making a copy out of the original dataframe to protect form changes
-        dataframe = original_dataframe.copy(deep=False)
-        for i in range(0, 2):
-            try:
-                # error check variable
-                error_check = False
-                # dropping inscode
-                dataframe.drop(['insCode'], axis=1, inplace=True)
-                # creating namad_symbol
-                namad_symbol = "nmd" + str(index)
-                # checking if the table exists and create it if not
-                HistoryTableCreate.price_table(index)
-                row_save_count = 0
-                # connecting to database
-                engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/moneymaker")
-
-                # adding to database
-                if tbl_dates is not None and error_check is False:
-                    # declaring variables
-                    loop_check = True
-                    counter = 0
-                    last_saved_date = tbl_dates[0]
-                    # checking if there's any last dates saved and list length
-                    if tbl_dates[0] != 0 and len(tbl_dates) > 0:
-                        # finding columns that needs to be saved
-                        while loop_check is True:
-                            if last_saved_date >= dataframe.loc[counter, 'dEven']:
-                                loop_check = False
-                                pass
-                            elif counter > 299:
-                                loop_check = False
-                                pass
-                            else:
-                                counter += 1
-                                pass
-                            pass
-                        # saving to database
-                        if counter < 1:
-                            # for when there isn't any existing records in db
-                            row_save_count = dataframe.to_sql(name=namad_symbol, con=engine,
-                                                              if_exists='append', index=False)
-                            pass
-                        else:
-                            """for when there are some records in db and 
-                                to sql function saves only columns that
-                                are not saved"""
-                            dataframe.drop(dataframe.index[counter:], axis=0, inplace=True)
-                            row_save_count = dataframe.to_sql(name=namad_symbol, con=engine,
-                                                              if_exists='append', index=False)
-                            pass
-                        pass
-                    else:
-                        counter = dataframe.to_sql(name=namad_symbol, con=engine,
-                                                   if_exists='append', index=False, chunksize=1)
-                        pass
-                # there was an error and data needs to be saved in static form
-                elif search.table(index=index) is True:
-                    counter = dataframe.to_sql(name=namad_symbol, con=engine,
-                                               if_exists='append', index=False,
-                                               chunksize=1)
-                else:
-                    counter = dataframe.to_sql(name=namad_symbol, con=engine,
-                                               if_exists='append', index=False)
-                    pass
-                # killing the engine
-                engine.dispose()
-                del engine
-                # return saved entries
-                return counter
-            except:
-                error_check = True
-                if i == 0:
-                    dataframe = original_dataframe.copy(deep=False)
-                    dataframe.fillna(0)
-                    pass
-                else:
-                    try:
-                        engine.dispose()
-                        del engine
-                        pass
-                    except:
-                        pass
-                    log.error_write(index)
-                    return 0
-                    pass
-                pass
-            pass
-        pass
-
-    def LiveSchema(dataframe: pandas.DataFrame, analyze: bool, index, tbl_dates: list = None):
-        # making a copy out of the original dataframe to protect form changes
-        for i in range(0, 2):
-            try:
-                # creating namad_symbol
-                namad_symbol = "nmd" + str(index)
-                # checking if the table exists and create it if not and create database engine
-                if analyze is True:
-                    row_save_count = 0
-                    engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                           "/live_analyze_update")
-                    pass
-                else:
-                    engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                           "/live_moneymaker_update")
-                    pass
-                # adding to database
-                counter = dataframe.to_sql(name=namad_symbol, con=engine,
-                                           if_exists='append', index=False)
-                # killing the engine
-                engine.dispose()
-                del engine
-                # return saved entries
-                return counter
-            except:
-                if i == 0:
-                    dataframe.fillna(0)
-                    pass
-                else:
-                    try:
-                        engine.dispose()
-                        del engine
-                        pass
-                    except:
-                        pass
-                    log.error_write(index)
-                    return 0
-                    pass
-
-    def all_best_limits(dataframe: pandas.DataFrame, live=False, truncate=True):
-        for i in range(0, 2):
-            try:
-                if live is True:
-                    tbl_name = "live_best_limits"
-                else:
-                    tbl_name = "all_best_limits"
-                # checking if the table exists and create it if not and create database engine
-                engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                       "/best_limits")
-                # adding to database
-                if truncate is True:
-                    modification.truncate("best_limits", tbl_name)
-                else:
-                    pass
-                counter = dataframe.to_sql(name=tbl_name, con=engine,
-                                           if_exists='append', index=False)
-                # killing the engine
-                engine.dispose()
-                del engine
-                # return saved entries
-                return counter
-            except:
-
-                try:
-                    engine.dispose()
-                    del engine
-                    pass
-                except:
-                    pass
-                log.error_write("")
-                return 0
-                pass
-
-    def live_best_limits(index, dataframe: pandas.DataFrame):
-        for i in range(0, 2):
-            try:
-                # creating namad_symbol
-                namad_symbol = "nmd" + str(index)
-                # checking if the table exists and create it if not and create database engine
-                engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                       "/best_limits")
-                # adding to database
-                counter = dataframe.to_sql(name=namad_symbol, con=engine,
-                                           if_exists='append', index=False)
-                # killing the engine
-                engine.dispose()
-                del engine
-                # return saved entries
-                return counter
-            except:
-                if i == 0:
-                    dataframe.fillna(0)
-                    pass
-                else:
-                    try:
-                        engine.dispose()
-                        del engine
-                        pass
-                    except:
-                        pass
-                    log.error_write(index)
-                    return 0
-                    pass
-
-    def close_best_limits(index, dataframe: pandas.DataFrame):
-        for i in range(0, 2):
-            try:
-                # creating namad_symbol
-                namad_symbol = "nmd" + str(index)
-                # checking if the table exists and create it if not and create database engine
-                engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                       "/close_best_limits")
-                # adding to database
-                counter = dataframe.to_sql(name=namad_symbol, con=engine,
-                                           if_exists='append', index=False)
-                # killing the engine
-                engine.dispose()
-                del engine
-                # return saved entries
-                return counter
-            except:
-                if i == 0:
-                    dataframe.fillna(0)
-                    pass
-                else:
-                    try:
-                        engine.dispose()
-                        del engine
-                        pass
-                    except:
-                        pass
-                    log.error_write(index)
-                    return 0
-                    pass
-
-    def analize_list_daily(original_dataframe: pandas.DataFrame, index, tbl_dates: list = None):
-        # creating dummpy engine
-        for i in range(0, 2):
-            try:
-                dataframe = original_dataframe.copy(deep=False)
-                # error check variable
-                error_check = False
-                # generate index number and table name
-                index = dataframe.loc[0, 'insCode']
-                namad_symbol = "nmd" + str(index)
-                # dropping inscode
-                dataframe.drop(['insCode'], axis=1, inplace=True)
-                # checking if the table exists and create it if not
-                HistoryTableCreate.analize_table(index)
-                row_save_count = 0
-                engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/analize")
-                # checking if tbl_dates exists or error_check is False, and it's not the second time running this loop
-                if tbl_dates is not None and error_check is False:
-                    # declaring variables
-                    loop_check = True
-                    counter = 0
-                    last_saved_date = tbl_dates[0]
-                    # checking if there's any last dates saved and list length
-                    if tbl_dates[0] != 0 and len(tbl_dates) > 0:
-                        # finding columns that needs to be saved
-                        while loop_check is True:
-                            if last_saved_date >= dataframe.loc[counter, 'dEven']:
-                                loop_check = False
-                                pass
-                            elif counter > 299:
-                                loop_check = False
-                                pass
-                            else:
-                                counter += 1
-                                pass
-                            pass
-                        if counter < 1:
-                            # for when there isn't any existing records in db
-                            row_save_count = dataframe.to_sql(name=namad_symbol, con=engine,
-                                                              if_exists='append', index=False)
-                            pass
-                        else:
-                            """for when there are some records in db and 
-                                to sql function saves only columns that
-                                are not saved"""
-                            dataframe.drop(dataframe.index[counter:], axis=0, inplace=True)
-                            row_save_count = dataframe.to_sql(name=namad_symbol, con=engine,
-                                                              if_exists='append', index=False)
-                            pass
-                        pass
-                    else:
-                        counter = dataframe.to_sql(name=namad_symbol, con=engine,
-                                                   if_exists='append', index=False)
-                        pass
-                # there was an error and data needs to be saved in static form
-                else:
-                    counter = dataframe.to_sql(name=namad_symbol, con=engine,
-                                               if_exists='append', index=False)
-                    pass
-                # killing the engine
-                engine.dispose()
-                del engine
-                # return saved entries
-                return counter
-            except:
-                error_check = True
-                if i == 0:
-                    dataframe.fillna(0)
-                    pass
-                else:
-                    try:
-                        engine.dispose()
-                        del engine
-                        pass
-                    except:
-                        pass
-                    log.error_write(index)
-                    return 0
-                    pass
-                pass
-            pass
-        pass
-
-    def tblnamadha_update(self: pandas.DataFrame):
-        try:
-            if self is None:
-                return None
-            else:
-                """loop length"""
-                loop_length = self.shape[0]
-                pass
-            # getting index list
-            index_list = search.any_table_records("0", "tblnamadha", "namad_index", "manager")
-            self.drop(['customLabel', 'dEven', 'hEven',
-                       'pClosing', 'pDrCotVal', 'zTotTran',
-                       'qTotTran5J', 'qTotCap', 'priceYesterday',
-                       'percent', 'priceChangePercent', 'hEvenShow',
-                       'color', 'fontSize', 'fontColor'], axis=1, inplace=True)
-            self.rename(columns={"insCode": "namad_index"}, inplace=True)
-            self.rename(columns={"lVal18AFC": "name"}, inplace=True)
-            self.rename(columns={"lVal30": "full_name"}, inplace=True)
-            self.rename(columns={"lSecVal": "category"}, inplace=True)
-            dic: dict = {
-                "namad_index": [],
-                "name": [],
-                "full_name": [],
-                "category": [],
-            }
-            new_df = pandas.DataFrame()
-            for i in range(0, loop_length):
-                df_series = self.loc[i]
-                # index check
-                if df_series.loc['namad_index'] not in index_list:
-                    dic["namad_index"].append(df_series.loc['namad_index'])
-                    dic["name"].append(df_series.loc['name'])
-                    dic["full_name"].append(df_series.loc['full_name'])
-                    dic["category"].append(df_series.loc['category'])
-                    pass
-                else:
-                    pass
-                pass
-            # connecting to database
-            engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/manager")
-            if len(dic) != 0:
-                row_save_count = new_df.to_sql(name="tblnamadha", con=engine,
-                                               if_exists='append', index=False)
-                pass
-            else:
-                pass
-        except:
-            print(sys.exc_info())
-            log.error_write("0")
-            return 0
-
 
 class obj_properties:
     def __init__(self):
@@ -537,6 +50,17 @@ class obj_properties:
 
         obj_type = 'tse'
 
+        class manager:
+            def __str__(self):
+                pass
+
+            class market_status:
+                date_field = 'todayDEven'
+                obj_type = 'tse'
+                schema = 'manager'
+                table_create_columns = ("todayDEven INT UNIQUE NOT NULL PRIMARY KEY,"
+                                        "marketActivityDEven INT NULL")
+
         class moneymaker_history:
             date_field = 'dEven'
             obj_type = 'tse'
@@ -567,27 +91,27 @@ class obj_properties:
             time_field = 'lastHEven'
             obj_type = 'tse'
             schema = 'live_moneymaker_update'
-            table_create_columns = ("finalLastDate varchar(20) NOT NULL," 
-                                   "lastHEven varchar(20) UNIQUE NOT NULL PRIMARY KEY," 
-                                   "buy_CountI varchar(20) NOT NULL," 
-                                   "buy_I_Volume varchar(20) NOT NULL," 
-                                   "sell_CountI varchar(20) NOT NULL," 
-                                   "sell_I_Volume varchar(20) NOT NULL," 
-                                   "buy_CountN varchar(20) NOT NULL," 
-                                   "buy_N_Volume varchar(20) NOT NULL," 
-                                   "sell_CountN varchar(20) NOT NULL," 
-                                   "priceYesterday varchar(20) NOT NULL," 
-                                   "priceFirst varchar(20) NOT NULL," 
-                                   "sell_I_Value varchar(20) NOT NULL," 
-                                   "sell_N_Value varchar(20) NOT NULL," 
-                                   "priceChange varchar(20) NOT NULL," 
-                                   "priceMin varchar(20) NOT NULL," 
-                                   "priceMax varchar(20) NOT NULL," 
-                                   "pClosing varchar(20) NOT NULL," 
-                                   "pDrCotVal varchar(20) NOT NULL," 
-                                   "zTotTran varchar(20) NOT NULL," 
-                                   "qTotTran5J varchar(20) NOT NULL," 
-                                   "qTotCap varchar(20) NOT NULL")
+            table_create_columns = ("finalLastDate varchar(20) NOT NULL,"
+                                    "lastHEven varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
+                                    "buy_CountI varchar(20) NOT NULL,"
+                                    "buy_I_Volume varchar(20) NOT NULL,"
+                                    "sell_CountI varchar(20) NOT NULL,"
+                                    "sell_I_Volume varchar(20) NOT NULL,"
+                                    "buy_CountN varchar(20) NOT NULL,"
+                                    "buy_N_Volume varchar(20) NOT NULL,"
+                                    "sell_CountN varchar(20) NOT NULL,"
+                                    "priceYesterday varchar(20) NOT NULL,"
+                                    "priceFirst varchar(20) NOT NULL,"
+                                    "sell_I_Value varchar(20) NOT NULL,"
+                                    "sell_N_Value varchar(20) NOT NULL,"
+                                    "priceChange varchar(20) NOT NULL,"
+                                    "priceMin varchar(20) NOT NULL,"
+                                    "priceMax varchar(20) NOT NULL,"
+                                    "pClosing varchar(20) NOT NULL,"
+                                    "pDrCotVal varchar(20) NOT NULL,"
+                                    "zTotTran varchar(20) NOT NULL,"
+                                    "qTotTran5J varchar(20) NOT NULL,"
+                                    "qTotCap varchar(20) NOT NULL")
 
         class analyze_history:
             date_field = 'dEven'
@@ -656,7 +180,7 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False):
             schema = obj.schema
             date_field = obj.date_field
             if truncate is True:
-                modification.truncate(schema, tbl_name)
+                truncate_table(schema, tbl_name)
             else:
                 pass
             # error check variable
@@ -698,15 +222,15 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False):
                                                                 if_exists='append', index=False)
                 else:
                     row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                          if_exists='append', index=False, chunksize=1)
+                                                            if_exists='append', index=False, chunksize=1)
             # there was an error and data needs to be saved in static form
             elif search_table(tbl_name, obj) is True:
                 row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                           if_exists='append', index=False,
-                                           chunksize=1)
+                                                        if_exists='append', index=False,
+                                                        chunksize=1)
             else:
                 row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                      if_exists='append', index=False)
+                                                        if_exists='append', index=False)
             # killing the engine
             engine.dispose()
             del engine
@@ -726,350 +250,80 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False):
                     pass
                 return 0
 
-
-
-
-class modification:
-
-    def truncate(schema, tbl_name):
-        try:
-            if search_table(tbl_name, schema=schema) is False:
+def read_table(tbl_name, obj, column_name = None, list_return=True):
+    try:
+        # baz kardane sql va khandane tblnamadhatemp
+        conn = mariadb.connect(
+            user="root",
+            password="Unique2213",
+            host="localhost",
+            port=3306,
+            database=obj.schema
+        )
+        cur = conn.cursor()
+        if column_name is not None:
+            cur.execute(r"SELECT %s FROM %s"
+                        % (column_name, tbl_name))
+        else:
+            cur.execute(r"SELECT * FROM %s"
+                        % tbl_name)
+            pass
+        conn.commit()
+        conn.close()
+        del conn
+        if list_return is True:
+            return_object = cur.fetchall()
+            print(return_object)
+            if len(return_object) < 1:
                 return None
             else:
-                script = "truncate table " + tbl_name
-                # baz kardane sql va khandane tblnamadhatemp
-                conn = mariadb.connect(
-                    user="root",
-                    password="Unique2213",
-                    host="localhost",
-                    port=3306,
-                    database=schema
-                )
-                cur = conn.cursor()
-                cur.execute(script)
-                conn.commit()
-                conn.close()
-                del conn
-                return True
-        except:
-            try:
-                conn.commit()
-                conn.close()
-                del conn
-            except:
-                pass
-            log.error_write(search.index(''))
-            return False
-        pass
-
-    def drop(index, address):
-        namad_symbol = search.names(index)
-        existance = search.table(table_name=namad_symbol)
-        if existance is False:
-            return None
+                return list(return_object[0])
         else:
-            error_count = 0
-            while error_count < 5:
-                try:
-                    con = sql.connect(address, check_same_thread=False)
-                    cur = con.cursor()
-                    cur.execute("DROP TABLE '%s'"
-                                % namad_symbol)
-                    con.commit()
-                    con.close()
-                    return None
-                except:
-                    error_count += 1
-                    sleep(random.random())
-                    pass
-                pass
-            if error_count > 4:
-                log.error_write(namad_symbol)
-                pass
+            return_object = cur.fetchone()
+            if return_object is None:
+                return None
             else:
-                pass
+                return return_object[0]
+    except:
+        try:
+            conn.commit()
+            conn.close()
+            del conn
+            pass
+        except:
+            pass
+        log.error_write("")
+
+
+def truncate_table(schema, tbl_name):
+    try:
+        if search_table(tbl_name, schema=schema) is False:
             return None
-        pass
-
-
-class read_temp:
-
-    def closing_price(index, index_number):
-        namad_symbol = search.names(index)
-        error_count = 0
-        while error_count < 3:
-            try:
-                # baz kardane sql va khandane tblnamadha
-                con = sql.connect(locator.temp_database(), check_same_thread=False)
-                con = sql.connect(locator.temp_database(), check_same_thread=False)
-                cur = con.cursor()
-                if index_number > 0:
-                    command = "SELECT dEven, pClosing, zTotTran, qTotTran5J, qTotCap FROM '%s' WHERE ROWID = '%s'"
-                    result = cur.execute(command
-                                         % (namad_symbol, index_number))
-                    pass
-                else:
-                    command = "SELECT dEven, pClosing, zTotTran, qTotTran5J, qTotCap FROM '%s'"
-                    result = cur.execute(command
-                                         % namad_symbol)
-                result = result.fetchall()
-                con.commit()
-                con.close()
-                if index_number > 0:
-                    return result[0]
-                else:
-                    return result
-            except:
-                error_count += 1
-                sleep(random.random())
-                if error_count >= 3:
-                    log.error_write(namad_symbol)
-                    return None
-                else:
-                    pass
-                pass
-            pass
-        pass
-
-    def closing_price_pd(index, index_number):
-        namad_symbol = search.names(index)
-        error_count = 0
-        result = None
-        while error_count < 3:
-            try:
-                # baz kardane sql va khandane tblnamadha
-                con = sql.connect(locator.temp_database(), check_same_thread=False)
-                cur = con.cursor()
-                if index_number > 0:
-                    query = "SELECT dEven, pClosing, zTotTran, qTotTran5J, qTotCap" \
-                            " FROM " + namad_symbol + " WHERE ROWID = " + index_number
-                    pass
-                else:
-                    query = "SELECT dEven, pClosing, zTotTran, qTotTran5J, qTotCap FROM " + namad_symbol
-                    pass
-                result = pd.read_sql(query, con)
-                con.commit()
-                con.close()
-                return result
-            except:
-                if error_count >= 3:
-                    log.error_write(namad_symbol)
-                else:
-                    error_count += 1
-                    sleep(random.random())
-                    pass
-                pass
-            return result
-        pass
-
-    def client_types(index, index_number):
-        namad_symbol = search.names(index)
-        error_count = 0
-        while error_count < 3:
-            try:
-                # baz kardane sql va khandane tblnamadha
-                con = sql.connect(locator.temp_database(), check_same_thread=False)
-                cur = con.cursor()
-                if index_number > 0:
-                    result = cur.execute(r"SELECT buy_I_Count,"
-                                         r"buy_I_Volume,"
-                                         r" sell_I_Count,"
-                                         r" sell_I_Volume,"
-                                         r" buy_N_Count,"
-                                         r" buy_N_Volume,"
-                                         r" sell_N_Count,"
-                                         r" sell_N_Volume"
-                                         r" FROM '%s' WHERE ROWID = '%s'"
-                                         % (namad_symbol, index_number))
-                    pass
-                else:
-                    result = cur.execute(r"SELECT buy_I_Count,"
-                                         r"buy_I_Volume,"
-                                         r" sell_I_Count,"
-                                         r" sell_I_Volume,"
-                                         r" buy_N_Count,"
-                                         r" buy_N_Volume,"
-                                         r" sell_N_Count,"
-                                         r" sell_N_Volume"
-                                         r" FROM '%s'"
-                                         % namad_symbol)
-                result = result.fetchall()
-                con.commit()
-                con.close()
-                break
-            except:
-                error_count += 1
-                log.error_write(namad_symbol)
-                pass
-            pass
-        if error_count < 3:
-            del cur, con, index, namad_symbol
-            return result
         else:
-            log.error_write(namad_symbol)
-            return None
-        pass
-
-    def client_types_pd(index, index_number):
-        namad_symbol = search.names(index)
-        error_count = 0
-        while error_count < 3:
-            try:
-                # baz kardane sql va khandane tblnamadha
-                con = sql.connect(locator.temp_database(), check_same_thread=False)
-                cur = con.cursor()
-                if index_number > 0:
-                    query = "SELECT buy_I_Count," \
-                            "buy_I_Volume," \
-                            " sell_I_Count," \
-                            " sell_I_Volume," \
-                            " buy_N_Count," \
-                            " buy_N_Volume," \
-                            " sell_N_Count," \
-                            " sell_N_Volume" \
-                            " FROM " + namad_symbol + "WHERE ROWID = " + index_number
-                    pass
-                else:
-                    query = "SELECT buy_I_Count," \
-                            " sell_I_Count," \
-                            "buy_I_Volume," \
-                            " sell_I_Volume," \
-                            " buy_N_Count," \
-                            " buy_N_Volume," \
-                            " sell_N_Count," \
-                            " sell_N_Volume" \
-                            " FROM " + namad_symbol
-                result = pd.read_sql(query, con)
-                con.commit()
-                con.close()
-                break
-            except:
-                error_count += 1
-                log.error_write(namad_symbol)
-                pass
+            script = "truncate table " + tbl_name
+            # baz kardane sql va khandane tblnamadhatemp
+            conn = mariadb.connect(
+                user="root",
+                password="Unique2213",
+                host="localhost",
+                port=3306,
+                database=schema
+            )
+            cur = conn.cursor()
+            cur.execute(script)
+            conn.commit()
+            conn.close()
+            del conn
+            return True
+    except:
+        try:
+            conn.commit()
+            conn.close()
+            del conn
+        except:
             pass
-        if error_count < 3:
-            del cur, con, index, namad_symbol
-            return result
-        else:
-            log.error_write(namad_symbol)
-            return None
-        pass
-
-    def tse_analize(index, index_number):
-        namad_symbol = search.names(index)
-        error_count = 0
-        while error_count < 3:
-            try:
-                # baz kardane sql va khandane tblnamadha
-                con = sql.connect(locator.temp_database(), check_same_thread=False)
-                cur = con.cursor()
-                if index_number > 0:
-                    result = cur.execute(r"SELECT ghodrat_kh_ha,"
-                                         r"ghodrat_fo_ha,"
-                                         r"ghodrat_kh_ho,"
-                                         r"ghodrat_fo_ho,"
-                                         r"ghodrat_khha_khho,"
-                                         r"ghodrat_hjmkhha_hjmkhho,"
-                                         r"ghodrat_foha_foho,"
-                                         r"ghodrat_hjmfoha_hjmfoho,"
-                                         r"percentage"
-                                         r" FROM '%s'"
-                                         r"WHERE ROWID = '%s'"
-                                         % (namad_symbol, index_number))
-                    pass
-                else:
-                    result = cur.execute(r"SELECT ghodrat_kh_ha,"
-                                         r"ghodrat_fo_ha,"
-                                         r"ghodrat_kh_ho,"
-                                         r"ghodrat_fo_ho,"
-                                         r"ghodrat_khha_khho,"
-                                         r"ghodrat_hjmkhha_hjmkhho,"
-                                         r"ghodrat_foha_foho,"
-                                         r"ghodrat_hjmfoha_hjmfoho,"
-                                         r"percentage"
-                                         r" FROM '%s'"
-                                         % namad_symbol)
-                result = result.fetchall()
-                con.commit()
-                con.close()
-                break
-            except:
-                error_count += 1
-                log.error_write(namad_symbol)
-                pass
-            pass
-        if error_count < 3:
-            del cur, con, index, namad_symbol
-            return result
-        else:
-            print("Error reading closing price from temp table for: " + namad_symbol)
-            return None
-        pass
-
-    def all(index, index_number):
-        namad_symbol = search.names(index)
-        error_count = 0
-        while error_count < 3:
-            try:
-                # baz kardane sql va khandane tblnamadha
-                con = sql.connect(locator.temp_database(), check_same_thread=False)
-                cur = con.cursor()
-                if index_number > 0:
-                    result = cur.execute(r"SELECT * "
-                                         r"FROM '%s'"
-                                         r"WHERE ROWID = '%s'"
-                                         % (namad_symbol, index_number))
-                    pass
-                else:
-                    result = cur.execute(r"SELECT * "
-                                         r"FROM '%s'"
-                                         % namad_symbol)
-                result = result.fetchall()
-                con.commit()
-                con.close()
-                break
-            except:
-                error_count += 1
-                log.error_write(namad_symbol)
-                pass
-            pass
-        if error_count < 3:
-            return result
-        else:
-            print("Error reading all data from temp database table for: " + namad_symbol)
-            return None
-        pass
-
-    def all_pd(index, index_number):
-        namad_symbol = search.names(index)
-        error_count = 0
-        result = None
-        while error_count < 3:
-            try:
-                # baz kardane sql va khandane tblnamadha
-                con = sql.connect(locator.temp_database(), check_same_thread=False)
-                cur = con.cursor()
-                if index_number > 0:
-                    query = "SELECT * FROM " + namad_symbol + " WHERE ROWID = " + index_number
-                    pass
-                else:
-                    query = "SELECT * FROM " + namad_symbol
-                result = pd.read_sql(query, con)
-                con.commit()
-                con.close()
-                break
-            except:
-                error_count += 1
-                log.error_write(namad_symbol)
-                pass
-            pass
-        if error_count < 3:
-            return result
-        else:
-            print("Error reading all data from temp database table for: " + namad_symbol)
-            return result
-        pass
+        log.error_write(search.index(''))
+        return False
 
 
 class read:
@@ -1158,22 +412,6 @@ class read:
                 pass
             log.error_write("")
 
-    def temp_table(index):
-        namad_symbol = search.names(index)
-        con = sql.connect(locator.temp_database(), check_same_thread=False)
-        cur = con.cursor()
-        result = cur.execute(r"SELECT * FROM '%s'"
-                             % namad_symbol)
-        result = result.fetchall()
-        con.commit()
-        con.close()
-        # loop baraye estekhraj kardane index namadha
-        namadha_index = []
-        for i in result:
-            namadha_index.append(i[0])
-            pass
-        return namadha_index
-
     """def analize_list(self):"""
 
     def all_tables(index, schema):
@@ -1198,36 +436,6 @@ class read:
                 pass
             log.error_write(index)
             return None
-
-
-class count:
-
-    def rows(address, table_name=None, index=None):
-        if table_name is None:
-            table_name = search.names(index)
-            pass
-        else:
-            pass
-        error_count = 0
-        while error_count < 7:
-            try:
-                con = sql.connect(address, check_same_thread=False)
-                cur = con.cursor()
-                result = cur.execute(r"SELECT count(*) FROM %s"
-                                     % table_name)
-                result = result.fetchall()
-                con.commit()
-                con.close()
-                return result[0][0]
-            except:
-                error_count += 1
-                sleep(random.random())
-                if error_count >= 7:
-                    log.error_write(table_name)
-                    return 0
-                    pass
-                else:
-                    pass
 
 
 class search:
@@ -1551,92 +759,6 @@ va sakhtane tabali jodagane baraye harkodoom az namad ha
 tarahi shode"""
 
 
-def row_counter(database, table_name):
-    error_count = 0
-    error_message = ""
-    result = None
-    while error_count < 3:
-        try:
-            # baz kardane sql va khandane tblnamadha
-            con = sql.connect(database, check_same_thread=False)
-            cur = con.cursor()
-            result = cur.execute(r"SELECT COUNT(*) FROM '%s'"
-                                 % table_name)
-            result = result.fetchall()
-            con.commit()
-            con.close()
-            break
-        except:
-            error_count += 1
-            sleep(random.random())
-            if error_count >= 3:
-                log.error_write(table_name)
-                return None
-                pass
-            else:
-                pass
-            pass
-        pass
-    del cur, con, table_name
-    return result[0][0]
-
-
-def percentage_update_table():
-    index_list = read.index()
-    namad_list = []
-    for i in index_list:
-        namad_list.append(search.names(i))
-        pass
-    for i in namad_list:
-        try:
-            con = sql.connect(locator.database(), check_same_thread=False)
-            cur = con.cursor()
-            con.execute("ALTER TABLE '%s'"
-                        "ADD percentage integer"
-                        % (i))
-            con.commit()
-            con.close()
-            print('succes')
-            pass
-
-        except:
-            log.error_write(i)
-            sleep(random.random())
-            pass
-        pass
-    return "Done"
-
-
-def close_price_update_table():
-    index_list = read.index()
-    namad_list = []
-    for i in index_list:
-        namad_list.append(search.names(i))
-        pass
-    for i in namad_list:
-        error_count = 0
-        while error_count < 7:
-            try:
-                con = sql.connect(locator.database(), check_same_thread=False)
-                cur = con.cursor()
-                con.execute("ALTER TABLE '%s'"
-                            "ADD close_price integer"
-                            % (i))
-                con.commit()
-                con.close()
-                print(i + ' creating success.')
-                pass
-
-            except:
-                error_count += 1
-                log.error_write(i)
-                sleep(random.uniform(0.1, 20.5))
-                pass
-            pass
-        pass
-    return "Done"
-
-
 def create_table(obj, tbl_name=None, full_index=False, tse=True):
     try:
         # when we want to create a full database for tse
@@ -1862,60 +984,6 @@ class LiveTableCreate:
         except:
             log.error_write('')
             return False
-
-
-def temp_table_creator(namad_symbol):
-    error_count = 0
-    existance = search.table(namad_symbol)
-    if existance is True:
-        return None
-    else:
-        pass
-    while error_count < 7:
-        try:
-            con = sql.connect(locator.temp_database(), check_same_thread=False)
-            cur = con.cursor()
-            con.execute("CREATE TABLE '%s'("
-                        "dEven integer (10) UNIQUE PRIMARY KEY,"
-                        "buy_I_Count integer (12),"
-                        "buy_I_Volume integer (12),"
-                        "sell_I_Count integer (12),"
-                        "sell_I_Volume integer (12),"
-                        "buy_N_Count integer (12),"
-                        "buy_N_Volume integer (12),"
-                        "sell_N_Count integer (12),"
-                        "sell_N_Volume integer (12),"
-                        "ghodrat_kh_ha integer (12),"
-                        "ghodrat_fo_ha integer (12),"
-                        "ghodrat_kh_ho integer (12),"
-                        "ghodrat_fo_ho integer (12),"
-                        "ghodrat_khha_khho integer (12),"
-                        "ghodrat_hjmkhha_hjmkhho integer (12),"
-                        "ghodrat_foha_foho integer (12),"
-                        "ghodrat_hjmfoha_hjmfoho integer (12),"
-                        "percentage integer (12),"
-                        "pClosing integer (12),"
-                        "zTotTran integer (12),"
-                        "qTotTran5J integer (12),"
-                        "base_volume integer (12),"
-                        "qTotCap integer (12)"
-                        ")"
-                        % (namad_symbol))
-            con.commit()
-            con.close()
-            return None
-            pass
-        except:
-            error_count += 1
-            sleep(random.random())
-            if error_count >= 7:
-                log.error_write(search.index(namad_symbol))
-                return None
-            else:
-                pass
-            pass
-        pass
-    pass
 
 
 class log:
@@ -2233,4 +1301,3 @@ class schemas:
     @staticmethod
     def close_best_limits():
         return "close_best_limits"
-

@@ -448,9 +448,9 @@ def sum_best_limit(object_list: list):
 def django_best_limits_all(live=True):
     try:
         if live is True:
-            script = "select * from live_best_limits"
+            script = "select * from bulk_live_best"
         else:
-            script = "select * from all_best_limits"
+            script = "select * from bulk_close_best"
         res = my_sql.search.script("best_limits", script, df_return=True)
         return res
     except:

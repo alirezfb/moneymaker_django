@@ -60,27 +60,27 @@ def infinity_run():
     if __name__ == '__main__':
         endless = True
         index_list = my_sql.read.index(bl_check=True)
+        # updateing last open day and today
+        extract_save.market_status()
         while endless is True:
             # my_sql.LiveTableCreate.price_table()
             market_state = extract_save.UrlFetcher.market_overview(only_state=True)
             while market_state is True:
                 live_update(index_list, state_check=True)
-                market_state = extract_save.UrlFetcher.market_overview(only_state=True)
                 live_best_limits = tse_analize.dataframe_return(index_list, "sum_live_best_limit")
-                my_sql.Write.all_best_limits(live_best_limits, live=True, truncate=True)
                 temp_index = tse_analize.list_compare(index_list, "read_sum_live_best_limit",
                                                       "latest_ha_be_ho")
                 live_best_limits = tse_analize.dataframe_return(temp_index, "sum_live_best_limit")
-                my_sql.Write.all_best_limits(live_best_limits, live=True, truncate=True)
                 sleep(190)
                 pass
             if market_state is False:
                 print("MARKET CLOSED")
                 history_update(index_list)
-                sleep(200)
                 temp_index = tse_analize.list_compare(index_list, "close_best_limit", "close_ghodrat_kh_ha")
-                live_best_limits = tse_analize.dataframe_return(temp_index, "all_close_best_limit")
-                my_sql.Write.all_best_limits(live_best_limits, live=False)
+                close_best_limits = tse_analize.dataframe_return(temp_index, "all_close_best_limit")
+                print(close_best_limits)
+                extract_save.best_limit_bulk(close_best_limits,
+                                             my_sql.obj_properties.tse.best_limits_live, live=False)
                 print('done')
                 sleep(300)
                 pass

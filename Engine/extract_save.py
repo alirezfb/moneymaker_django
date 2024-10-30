@@ -88,6 +88,18 @@ class UrlFetcher:
 
     pass
 
+
+def market_status():
+    market_state = tse_connect.market_state()
+    data = {'todayDEven': [tse_time.today_int()],
+            'marketActivityDEven': [int(market_state.last_open())]}
+
+    # Create DataFrame
+    df = pd.DataFrame(data)
+    my_sql.write_table(df, "market_status",
+                       my_sql.obj_properties.tse.manager.market_status)
+
+
 """class filter:
 
     def closed_best_limits(only_state=False):
@@ -204,6 +216,20 @@ def price_list(index, pd_df: pandas.DataFrame, tbl_dates=None):
         return None
 
 
+def best_limit_bulk(best_limit_list: list, obj, live: bool = True):
+    try:
+        if live is True:
+            tbl_name = "bulk_live_best"
+        else:
+            tbl_name = "bulk_close_best"
+        for dataframe in best_limit_list:
+            my_sql.write_table(dataframe, tbl_name, obj, truncate=True)
+        return True
+    except:
+        my_sql.log.error_write("")
+        return False
+
+
 def JointDataframe(index, mode: str):
     #counter = 0
     analize_df = my_sql.read.all_tables(index, 'analize')
@@ -311,3 +337,4 @@ class BackgroundServices(threading.Thread):
             my_sql.log.error_write(index)
             return None
         pass
+
