@@ -49,12 +49,9 @@ def history_fetcher__(index):
         last_open = my_sql.read_table("market_status",
                                       my_sql.obj_properties.tse.manager.market_status,
                                       "marketActivityDEven", list_return=False)
-        print(str(last_saved_day) + " " + str(last_open))
         if last_open == last_saved_day:
-            print(1)
             return None
         else:
-            print(2)
             history_object = tse_connect.history_database(index)
             # fetching price list from url and saving them
             closing_price_response = history_object.fetch_closing_price()

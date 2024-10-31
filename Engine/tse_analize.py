@@ -395,7 +395,7 @@ class calculate_pd:
         pass
 
 
-def dataframe_return(index_list, definition: str = "last_5_best_limit"):
+def dataframe_return(index_list, definition: str = "last_5_best_limit", rename=True):
     try:
         result_list = []
         for index in index_list:
@@ -406,8 +406,11 @@ def dataframe_return(index_list, definition: str = "last_5_best_limit"):
                 continue
             elif len(temp_res.index) > 0:
                 res = (pd.DataFrame(temp_res.sum())).T
-                res['index'] = str(index)
-                res['name'] = my_sql.search.names(index)
+                if rename is True:
+                    res['index'] = str(index)
+                    res['name'] = my_sql.search.names(index)
+                else:
+                    pass
                 result_list.append(res)
                 pass
             else:
@@ -489,10 +492,18 @@ def close_market_list(index_list):
         return None
 
 
-def list_compare(index_list, *args):
+def list_compare_old(index_list, *args):
     list_of_lists = []
     for definition in args:
         list_of_lists.append(list_return(index_list, definition))
+    return_list = list_of_lists[0]
+    for i in range(1, len(list_of_lists) - 1):
+        return_list = [num for num in return_list
+                       if num in list_of_lists[i]]
+    return return_list
+
+
+def list_compare(list_of_lists):
     return_list = list_of_lists[0]
     for i in range(1, len(list_of_lists) - 1):
         return_list = [num for num in return_list

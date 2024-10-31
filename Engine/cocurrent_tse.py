@@ -12,6 +12,7 @@ except:
     import extract_save
     import my_sql
 
+# 46348559193224090
 
 """def multiprocess_return(index_list, definition):
     with ProcessPoolExecutor(max_workers=20) as exc1:
@@ -20,6 +21,14 @@ except:
         exc1.shutdown()
         pass
     return None"""
+
+
+def multiprocess_function(func, *args):
+    with ProcessPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(square, i) for i in range(5)]
+        res = exc1.map(func, *args)
+        exc1.shutdown()
+    return list(res)
 
 
 def live_update(index_list, state_check=True):
@@ -68,7 +77,7 @@ def infinity_run():
             while market_state is True:
                 live_update(index_list, state_check=True)
                 live_best_limits = tse_analize.dataframe_return(index_list, "sum_live_best_limit")
-                temp_index = tse_analize.list_compare(index_list, "read_sum_live_best_limit",
+                temp_index = tse_analize.list_compare_old(index_list, "read_sum_live_best_limit",
                                                       "latest_ha_be_ho")
                 live_best_limits = tse_analize.dataframe_return(temp_index, "sum_live_best_limit")
                 sleep(190)
@@ -76,8 +85,10 @@ def infinity_run():
             if market_state is False:
                 print("MARKET CLOSED")
                 history_update(index_list)
-                temp_index = tse_analize.list_compare(index_list, "close_best_limit", "close_ghodrat_kh_ha")
-                close_best_limits = tse_analize.dataframe_return(temp_index, "all_close_best_limit")
+                temp_index = tse_analize.list_compare_old(index_list, "close_best_limit", "close_ghodrat_kh_ha")
+                print(temp_index)
+                #temp_index = multiprocess_function(tse_analize.list_compare, index_list, "close_best_limit", "close_ghodrat_kh_ha")
+                close_best_limits = tse_analize.dataframe_return(temp_index, "all_close_best_limit", rename=False)
                 print(close_best_limits)
                 extract_save.best_limit_bulk(close_best_limits,
                                              my_sql.obj_properties.tse.best_limits_live, live=False)
