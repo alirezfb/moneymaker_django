@@ -28,6 +28,7 @@ class obj_properties:
         obj_type = 'crypto'
 
         class chart_data:
+            fa_charset = False
             date_field = 'open_time'
             schema = 'crypto_chart_data'
             obj_type = 'crypto'
@@ -55,6 +56,7 @@ class obj_properties:
                 pass
 
             class market_status:
+                fa_charset = False
                 date_field = 'todayDEven'
                 obj_type = 'tse'
                 schema = 'manager'
@@ -62,6 +64,7 @@ class obj_properties:
                                         "marketActivityDEven INT NULL")
 
         class moneymaker_history:
+            fa_charset = False
             date_field = 'dEven'
             obj_type = 'tse'
             schema = 'moneymaker'
@@ -87,6 +90,7 @@ class obj_properties:
                                     "qTotCap varchar(20) NOT NULL")
 
         class moneymaker_live:
+            fa_charset = False
             date_field = 'finalLastDate'
             time_field = 'lastHEven'
             obj_type = 'tse'
@@ -114,6 +118,7 @@ class obj_properties:
                                     "qTotCap varchar(20) NOT NULL")
 
         class analyze_history:
+            fa_charset = False
             date_field = 'dEven'
             obj_type = 'tse'
             schema = 'analize'
@@ -129,12 +134,14 @@ class obj_properties:
                                    "ghodrat_hjmfoha_hjmfoho varchar(20) NOT NULL"
 
         class analyze_live:
+            fa_charset = False
             date_field = 'finalLastDate'
             time_field = 'lastHEven'
             obj_type = 'tse'
             schema = 'live_analyze_update'
 
         class best_limits_live:
+            fa_charset = False
             date_field = 'datetime'
             obj_type = 'tse'
             schema = 'best_limits'
@@ -148,6 +155,7 @@ class obj_properties:
                                     "qTitMeOf int null")
 
         class best_limits_history:
+            fa_charset = False
             date_field = ''
             obj_type = 'tse'
             schema = 'close_best_limits'
@@ -160,6 +168,7 @@ class obj_properties:
                                     "qTitMeOf bigint null")
 
         class sum_close_best_limits:
+            fa_charset = False
             date_field = ''
             obj_type = 'tse'
             schema = 'sum_close_best_limits'
@@ -170,65 +179,89 @@ class obj_properties:
                                     "zOrdMeOf mediumint null,"
                                     "qTitMeOf int null")
 
+        class bulk_some_close_best_limits:
+            fa_charset = True
+            date_field = ''
+            obj_type = 'tse'
+            schema = 'sum_close_best_limits'
+            table_create_columns = ("name varchar(20) null,"
+                                    "qTitMeDem int null,"
+                                    "zOrdMeDem mediumint null,"
+                                    "pMeDem mediumint null,"
+                                    "pMeOf mediumint null,"
+                                    "zOrdMeOf mediumint null,"
+                                    "qTitMeOf int null")
 
-def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False):
-    # making a copy to protect form changes
-    clone_dataframe = dataframe.copy(deep=False)
-    # extract schema and datefield name from object
+
+def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, save_limit=10000):
     for i in range(0, 2):
         try:
-            schema = obj.schema
-            date_field = obj.date_field
-            if truncate is True:
-                truncate_table(schema, tbl_name)
+            if dataframe is None:
+                return 0
             else:
                 pass
-            # error check variable
-            error_check = False
+            # making a copy to protect form changes
+            clone_dataframe = dataframe.copy(deep=False)
+            # extract schema and datefield name from object
+            schema = obj.schema
+            date_field = obj.date_field
             # checking if the table exists and create it if not
             create_table(obj, tbl_name)
-            row_save_count = 0
+            # truncate table if needed
+            if truncate is True:
+                truncate_table(schema, tbl_name)
+                last_saved_date = 0
+            # getting last saved dates if truncate isn't used
+            elif existing_dates is None:
+                existing_dates = search_dates(tbl_name, obj, list_return=True)
+                last_saved_date = int(existing_dates[0])
+            # declare last_saved_date for when we have existing date and don't truncate
+            else:
+                last_saved_date = int(existing_dates[0])
+                pass
+            '''error check is for the first loop with existing dates has failed
+            and static save is needed'''
+            error_check = False
             # connecting to database
             engine = create_engine("mariadb+mariadbconnector://" +
                                    "root:Unique2213@127.0.0.1:3306/" +
                                    schema)
             # adding to database
-            if existing_dates is not None and error_check is False:
+            if error_check is False and last_saved_date != 0:
                 # declaring variables
-                loop_check = True
                 loop_counter = 0
-                last_saved_date = existing_dates[0]
-                # checking if there's any last dates saved and list length
-                if existing_dates[0] != 0 and len(existing_dates) > 0:
-                    # finding columns that needs to be saved
-                    while loop_check is True:
-                        if last_saved_date >= clone_dataframe.loc[loop_counter, date_field]:
-                            loop_check = False
-                        elif loop_counter > 299:
-                            loop_check = False
-                        else:
-                            loop_counter += 1
-                    # saving to database
-                    if loop_counter < 1:
-                        # for when there isn't any existing records in db
-                        row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                                if_exists='append', index=False)
+                ''' this loop is for when we have existing date list
+                                    and we check for existing records in db '''
+                # finding columns that needs to be saved
+                for date in clone_dataframe[date_field]:
+                    if last_saved_date >= int(date):
+                        break
+                    elif loop_counter > save_limit:
+                        break
                     else:
-                        """for when there are some records in db and 
-                            to sql function saves only columns that
-                            are not saved"""
-                        clone_dataframe.drop(clone_dataframe.index[loop_counter:], axis=0, inplace=True)
-                        row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                                if_exists='append', index=False)
+                        loop_counter += 1
+                # save to database
+                if loop_counter == 0:
+                    ''' when there isn't any new records in dataframe'''
+                    row_save_count = 0
                 else:
+                    ''' for when there are some records in db and 
+                                            to sql function saves only columns that
+                                            are not saved '''
+                    clone_dataframe.drop(clone_dataframe.index[loop_counter:], axis=0, inplace=True)
                     row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
-                                                            if_exists='append', index=False, chunksize=1)
-            # there was an error and data needs to be saved in static form
+                                                            if_exists='append', index=False)
             elif search_table(tbl_name, obj) is True:
+                ''' when table exists and either we don't have existing 
+                    date list and have to go static and save one by one record
+                    or there was some error saving dynamically '''
                 row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
                                                         if_exists='append', index=False,
                                                         chunksize=1)
             else:
+                ''' when there is no existing table and there is no 
+                    existing date list have to create table and save
+                    records all at once '''
                 row_save_count = clone_dataframe.to_sql(name=tbl_name, con=engine,
                                                         if_exists='append', index=False)
             # killing the engine
@@ -240,6 +273,7 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False):
             log.error_write(tbl_name)
             error_check = True
             if i == 0:
+                # when there is a null or nan record in dataframe
                 clone_dataframe = dataframe.copy(deep=False)
                 clone_dataframe.fillna(0)
             else:
@@ -262,10 +296,10 @@ def read_table(tbl_name, obj, column_name = None, list_return=True):
         )
         cur = conn.cursor()
         if column_name is not None:
-            cur.execute(r"SELECT %s FROM %s"
+            cur.execute(r"SELECT %s FROM %s "
                         % (column_name, tbl_name))
         else:
-            cur.execute(r"SELECT * FROM %s"
+            cur.execute(r"SELECT * FROM %s "
                         % tbl_name)
             pass
         conn.commit()
@@ -273,7 +307,6 @@ def read_table(tbl_name, obj, column_name = None, list_return=True):
         del conn
         if list_return is True:
             return_object = cur.fetchall()
-            print(return_object)
             if len(return_object) < 1:
                 return None
             else:
@@ -324,6 +357,54 @@ def truncate_table(schema, tbl_name):
             pass
         log.error_write(search.index(''))
         return False
+
+
+def search_dates(tbl_name, obj, list_return=True):
+    try:
+        date_field = obj.date_field
+        schema = obj.schema
+        if date_field == '':
+            return[0]
+        else:
+            pass
+        # baz kardane sql va khandane tblnamadhatemp
+        conn = mariadb.connect(
+            user="root",
+            password="Unique2213",
+            host="localhost",
+            port=3306,
+            database=schema
+        )
+        cur = conn.cursor()
+        cur.execute(r"SELECT %s FROM %s ORDER BY %s DESC"
+                    % (date_field, tbl_name, date_field))
+        conn.commit()
+        conn.close()
+        del conn
+        if list_return is True:
+            return_object = cur.fetchall()
+            for i in range(0, len(return_object)):
+                return_object[i] = int(return_object[i][0])
+            if len(return_object) < 1:
+                return [0]
+            else:
+                return list(return_object)
+        else:
+            return_object = cur.fetchone()
+            if return_object is None:
+                return [0]
+            else:
+                return return_object[0]
+    except:
+        log.error_write("")
+        try:
+            conn.commit()
+            conn.close()
+            del conn
+            pass
+        except:
+            pass
+        return [0]
 
 
 class read:
@@ -636,7 +717,7 @@ class search:
             return None
         pass
 
-    def dates(index, schema: str = None):
+    def dates(index, tbl_name = None, schema: str = None):
         if search.table(index=index) is not True:
             return [0]
         elif schema is None:
@@ -644,7 +725,6 @@ class search:
             pass
         else:
             pass
-        table_name = "nmd" + str(index)
         try:
             # baz kardane sql va khandane tblnamadhatemp
             conn = mariadb.connect(
@@ -656,7 +736,7 @@ class search:
             )
             cur = conn.cursor()
             cur.execute(r"SELECT dEven FROM  %s "
-                        % (table_name))
+                        % (tbl_name))
             q_result = cur.fetchall()
             conn.commit()
             conn.close()
@@ -784,6 +864,11 @@ def create_table(obj, tbl_name=None, full_index=False, tse=True):
                     cur = conn.cursor()
                     script = ("CREATE TABLE IF NOT EXISTS %s ( \n" % i +
                               obj.table_create_columns + "\n )")
+                    if obj.fa_charset is True:
+                        script += "\ncharset = utf8mb4;"
+                    else:
+                        pass
+                    print(script)
                     cur.execute(script)
                     conn.commit()
                 except:

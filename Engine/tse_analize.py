@@ -395,7 +395,7 @@ class calculate_pd:
         pass
 
 
-def dataframe_return(index_list, definition: str = "last_5_best_limit", rename=True):
+def dataframe_return_old(index_list, definition: str = "last_5_best_limit", rename=True):
     try:
         result_list = []
         for index in index_list:
@@ -420,10 +420,13 @@ def dataframe_return(index_list, definition: str = "last_5_best_limit", rename=T
         del result_list[0]
         for df in result_list:
             return_df = pd.concat([return_df, df], axis=0, ignore_index=True)
-        return_df.columns = ["Hajm Kharid", "Tedad Kharid",
-                             "Gheymat Kharid", "Gheymat Foroosh",
-                             "Tedad Foroosh", "Hajm Foroosh",
-                             "Index", "Name"]
+        if rename is True:
+            return_df.columns = ["Hajm Kharid", "Tedad Kharid",
+                                 "Gheymat Kharid", "Gheymat Foroosh",
+                                 "Tedad Foroosh", "Hajm Foroosh",
+                                 "Index", "Name"]
+        else:
+            pass
         return return_df
     except:
         my_sql.log.error_write("")
@@ -454,7 +457,8 @@ def django_best_limits_all(live=True):
             script = "select * from bulk_live_best"
         else:
             script = "select * from bulk_close_best"
-        res = my_sql.search.script("best_limits", script, df_return=True)
+        res = my_sql.search.script(my_sql.obj_properties.tse.bulk_some_close_best_limits.schema,
+                                   script, df_return=True)
         return res
     except:
         my_sql.log.error_write("")
@@ -476,6 +480,35 @@ def list_return(index_list, definition):
     except:
         my_sql.log.error_write("")
         return None
+
+
+def record_status_return(index, definition):
+    try:
+        obj = scripts(index=index, only_status=True, df_return=False)
+        func = "scripts." + definition + "()"
+        res = getattr(obj, definition)()
+        return res
+    except:
+        my_sql.log.error_write("")
+        return False
+
+
+def dataframe_return(index, definition, rename_sum=False):
+    try:
+        print(rename_sum)
+        obj = scripts(index=index, only_status=False, df_return=True)
+        func = "scripts." + definition + "()"
+        res = getattr(obj, definition)()
+        if rename_sum is True:
+            res['name'] = my_sql.search.names(index)
+        else:
+            pass
+        print(res)
+        return res
+    except:
+        print(sys.exc_info())
+        my_sql.log.error_write("")
+        return False
 
 
 def close_market_list(index_list):
@@ -503,7 +536,7 @@ def list_compare_old(index_list, *args):
     return return_list
 
 
-def list_compare(list_of_lists):
+def list_compare():
     return_list = list_of_lists[0]
     for i in range(1, len(list_of_lists) - 1):
         return_list = [num for num in return_list
@@ -690,7 +723,7 @@ class scripts:
             my_sql.log.error_write(self.index)
             return None"""
 
-    def sum_close_best_limits(self, live=True):
+    def sum_close_best_limits_generate(self, live=True):
         try:
             script = self.objects.select_script(select_group=self.objects.columns.best_limits(sum_group=True)) +\
                      self.objects.from_script(name=self.name) +\
@@ -746,6 +779,17 @@ class scripts:
                                                "qTitMeDem/zOrdMeDem > (qTitMeOf/zOrdMeOf)*2") +\
                      self.objects.limit_script(5)
             return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
+        except:
+            my_sql.log.error_write(self.index)
+            return None
+
+    def sum_close_best_limit_read(self):
+        try:
+            script = self.objects.select_script(select_group=self.objects.columns.best_limits()) +\
+                     self.objects.from_script(name=self.name) +\
+                     self.objects.limit_script(1)
+            return scripts.__return_process(self,
+                                            my_sql.obj_properties.tse.sum_close_best_limits.schema, script=script)
         except:
             my_sql.log.error_write(self.index)
             return None

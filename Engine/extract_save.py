@@ -10,6 +10,7 @@ import pandas as pd
 # Import Section
 
 import pandas
+from concurrent.futures import ProcessPoolExecutor
 from time import sleep
 try:
     from . import my_sql
@@ -26,8 +27,36 @@ except:
 
 # START
 
-class UrlFetcher:
+def common_member(a, b):
+    try:
+        a_set = set(a)
+        b_set = set(b)
 
+        # check length
+        if len(a_set.intersection(b_set)) > 0:
+            return list(a_set.intersection(b_set))
+        else:
+            return []
+    except:
+        my_sql.log.error_write("")
+        return []
+
+
+def multiprocess_function_list(func, loop_list, *args):
+    try:
+        result_list = []
+        print(args)
+        with ProcessPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(func, i, *args) for i in loop_list]
+        for future in futures:
+            result_list.append(future.result())
+        return result_list
+    except:
+        my_sql.log.error_write("")
+        return None
+
+
+class UrlFetcher:
     def closing_price_download_pd(index, live: bool=True):
         try:
             if live is True:
@@ -99,50 +128,6 @@ def market_status():
     my_sql.write_table(df, "market_status",
                        my_sql.obj_properties.tse.manager.market_status)
 
-
-"""class filter:
-
-    def closed_best_limits(only_state=False):
-        index_list = my_sql.read.index()
-        selected_indexes: list = []
-        for index in index_list:
-            result_df: pandas.DataFrame = tse_analize.scripts.close_best_limit()
-            if result_df is None or len(result_df.index) < 1:
-                continue
-            else:
-                selected_indexes.append(index)
-            del result_df
-        return selected_indexes
-    def best_limits_ghodrat_kh(only_state=False):
-        index_list = my_sql.read.index()
-        selected_indexes: list = []
-        for index in index_list:
-            result_df: pandas.DataFrame = tse_analize.filter.latest_minute_best_limit(index)
-            if result_df is None or len(result_df.index) < 1:
-                continue
-            else:
-                result_df_ = tse_analize.filter.latest_ghodrat_kh_ha(index)
-                if result_df_ is None or len(result_df_.index) < 1:
-                    continue
-                else:
-                    selected_indexes.append(index)
-                    pass
-                pass
-            del result_df_, result_df
-        return selected_indexes
-    @staticmethod
-    def top_hajme_haghighi():
-        index_list = my_sql.read.index()
-        results: list = []
-        for index in index_list:
-            result = tse_analize.filter.close_best_limit(index)
-            if result is not None:
-                results.append(result)
-                pass
-            else:
-                pass
-            pass
-        pass"""
 def database_writing_loop_pd(index, pd_df: pandas.DataFrame):
     try:
         numbers_list = []
@@ -217,16 +202,62 @@ def price_list(index, pd_df: pandas.DataFrame, tbl_dates=None):
 
 
 def best_limit_bulk(dataframe, obj, live: bool = True):
+    if live is True:
+        tbl_name = "bulk_live_best"
+    else:
+        tbl_name = "bulk_close_best"
+    # saving into database
+    my_sql.write_table(dataframe, tbl_name, obj, truncate=True)
+
+
+def compare_lists(index_list: list, definition, df_return: bool = False, rename_sum: bool = True):
     try:
-        if live is True:
-            tbl_name = "bulk_live_best"
+        print(rename_sum)
+        if df_return is False:
+            return_object = index_list.copy()
+            status_list = multiprocess_function_list(tse_analize.record_status_return,
+                                                     index_list, definition)
+            for i in range(0, len(index_list)-1):
+                if status_list[i] is True:
+                    continue
+                else:
+                    return_object.remove(index_list[i])
         else:
-            tbl_name = "bulk_close_best"
-        # saving into database
-        my_sql.write_table(dataframe, tbl_name, obj, truncate=True)
+            dataframe_list = multiprocess_function_list(tse_analize.dataframe_return,
+                                                        index_list, definition, rename_sum)
+            temp_list = dataframe_list.copy()
+            for i in range(0, len(index_list) - 1):
+                if dataframe_list[i] is not None:
+                    continue
+                else:
+                    temp_list.remove(index_list[i])
+            return_object = temp_list[0]
+            del temp_list[0]
+            for df in temp_list:
+                return_object = pd.concat([return_object, df], axis=0, ignore_index=True)
+            print(return_object)
+        return return_object
     except:
         my_sql.log.error_write("")
-        return False
+
+
+def multi_list_compare(index_list, *args, df_return: bool = False, rename_sum: bool = True):
+    try:
+        print(rename_sum)
+        multi_list = []
+        if df_return is False:
+            for definition in args:
+                multi_list.append(compare_lists(index_list, definition))
+        else:
+            for definition in args:
+                multi_list.append(compare_lists(index_list, definition, df_return=df_return, rename_sum=rename_sum))
+        print(multi_list)
+        return_list = multi_list[0]
+        for i in range(1, len(multi_list)):
+            return_list = common_member(return_list, multi_list[i])
+        return return_list
+    except:
+        my_sql.log.error_write("")
 
 
 def JointDataframe(index, mode: str):

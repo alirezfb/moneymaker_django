@@ -42,14 +42,19 @@ def live_fetcher__(index):
 
 def history_fetcher__(index):
     try:
+        tbl_name = "nmd" + str(index)
         # getting saved dates of an index in main database
-        last_saved_day = my_sql.search.dates(index)[0]
         # last open day
         market_obj = tse_connect.market_state()
+        main_date_list = my_sql.search_dates(tbl_name,
+                                             my_sql.obj_properties.tse.moneymaker_history, list_return=True)
+        analyze_date_list = my_sql.search_dates(tbl_name,
+                                                my_sql.obj_properties.tse.analyze_history, list_return=True)
         last_open = my_sql.read_table("market_status",
                                       my_sql.obj_properties.tse.manager.market_status,
                                       "marketActivityDEven", list_return=False)
-        if last_open == last_saved_day:
+        if last_open == main_date_list[0] and last_open == analyze_date_list[0]:
+            print('skip')
             return None
         else:
             history_object = tse_connect.history_database(index)
@@ -82,9 +87,9 @@ def history_write__(response_list, index):
             sum_best_obj = my_sql.obj_properties.tse.sum_close_best_limits
             history_object = tse_connect.history_database(index, save_limit=800)
             # getting saved dates of an index in main database
-            main_date_list = my_sql.search.dates(index)
+            main_date_list = my_sql.search_dates(tbl_name, moneymaker_obj)
             # getting saved dates of an index in analize database
-            analyze_date_list = my_sql.search.dates(index, schema="analize")
+            analyze_date_list = my_sql.search_dates(tbl_name, analyze_obj)
             # extracting lists form lists
             client_response = response_list[0]
             closing_response = response_list[1]
@@ -112,7 +117,7 @@ def history_write__(response_list, index):
                     # analyze write
                     result = my_sql.write_table(analyze_df, tbl_name, analyze_obj, analyze_date_list)
                     scripts = tse_analize.scripts(index=index)
-                    sum_best_limits = scripts.sum_close_best_limits(live=False)
+                    sum_best_limits = scripts.sum_close_best_limits_generate(live=False)
                     my_sql.write_table(sum_best_limits, tbl_name, sum_best_obj, truncate=True)
                     print(str(index) + " Completed " + str(result))
                     return result

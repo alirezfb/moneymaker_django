@@ -30,7 +30,7 @@ register.filter("convert_data_frame_to_html_table_headers", convert_data_frame_t
 def pd_to_html():
     try:
         index_list = my_sql.read.index(bl_check=True)
-        df = tse_analize.dataframe_return(index_list, "close_best_limit")
+        df = tse_analize.dataframe_return_old(index_list, "close_best_limit")
         df_html = df.to_html(justify="center", classes="table table-bordered")
         return df_html
     except:
