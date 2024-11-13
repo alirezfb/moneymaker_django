@@ -13,7 +13,7 @@ import sys
 from time import sleep
 import random
 import pandas as pd
-
+import tse_time
 
 # START
 
@@ -47,6 +47,7 @@ class obj_properties:
 
     class tse:
         def __init__(self):
+            self.obj_type = 'tse'
             pass
 
         obj_type = 'tse'
@@ -179,7 +180,22 @@ class obj_properties:
                                     "zOrdMeOf mediumint null,"
                                     "qTitMeOf int null")
 
+        class sum_live_best_limits:
+            fa_charset = False
+            date_field = ''
+            obj_type = 'tse'
+            schema = 'sum_live_best_limits'
+            table_create_columns = ("qTitMeDem int null,"
+                                    "zOrdMeDem mediumint null,"
+                                    "pMeDem mediumint null,"
+                                    "pMeOf mediumint null,"
+                                    "zOrdMeOf mediumint null,"
+                                    "qTitMeOf int null")
+
         class bulk_some_close_best_limits:
+            def __init__(self):
+                self.obj_type = obj_properties.tse.obj_type
+
             fa_charset = True
             date_field = ''
             obj_type = 'tse'
@@ -284,7 +300,8 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, s
                     pass
                 return 0
 
-def read_table(tbl_name, obj, column_name = None, list_return=True):
+
+def read_table(tbl_name, obj, column_name=None, list_return=True):
     try:
         # baz kardane sql va khandane tblnamadhatemp
         conn = mariadb.connect(
@@ -364,7 +381,7 @@ def search_dates(tbl_name, obj, list_return=True):
         date_field = obj.date_field
         schema = obj.schema
         if date_field == '':
-            return[0]
+            return [0]
         else:
             pass
         # baz kardane sql va khandane tblnamadhatemp
@@ -382,19 +399,23 @@ def search_dates(tbl_name, obj, list_return=True):
         conn.close()
         del conn
         if list_return is True:
-            return_object = cur.fetchall()
-            for i in range(0, len(return_object)):
-                return_object[i] = int(return_object[i][0])
-            if len(return_object) < 1:
+            temp_list = cur.fetchall()
+            return_list = []
+            for i in range(0, len(temp_list)):
+                if tse_time.datetime_type_check(temp_list[i][0]) is True:
+                    return_list.append(tse_time.int_db_form(temp_list[i][0]))
+                else:
+                    return_list.append(int(temp_list[i][0]))
+            if len(return_list) < 1:
                 return [0]
             else:
-                return list(return_object)
+                return return_list
         else:
-            return_object = cur.fetchone()
-            if return_object is None:
+            temp_list = cur.fetchone()
+            if temp_list is None:
                 return [0]
             else:
-                return return_object[0]
+                return temp_list[0]
     except:
         log.error_write("")
         try:
@@ -521,12 +542,18 @@ class read:
 
 class search:
 
-    def script(schema: str, script: str, df_return=True):
+    def script(schema: str, script: str, df_return=True, tbl_name=None):
         try:
+            if tbl_name is not None:
+                if search_table(tbl_name, schema=schema) is False:
+                    return None
+                else:
+                    pass
+            else:
+                pass
             if df_return is True:
                 engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
                                        "/" + schema)
-
                 return_object = pd.read_sql(script, engine)
                 engine.dispose()
                 del engine
@@ -717,7 +744,7 @@ class search:
             return None
         pass
 
-    def dates(index, tbl_name = None, schema: str = None):
+    def dates(index, tbl_name=None, schema: str = None):
         if search.table(index=index) is not True:
             return [0]
         elif schema is None:
@@ -868,7 +895,6 @@ def create_table(obj, tbl_name=None, full_index=False, tse=True):
                         script += "\ncharset = utf8mb4;"
                     else:
                         pass
-                    print(script)
                     cur.execute(script)
                     conn.commit()
                 except:
@@ -1105,7 +1131,6 @@ class log:
                                      if_exists='append', index=False)
             pass
         except:
-            print(sys.exc_info())
             '''fallback baraye shomardane tedade eun shodane tabe 
             log tavasote log hast'''
             fallback = kwargs.get('fallback', None)

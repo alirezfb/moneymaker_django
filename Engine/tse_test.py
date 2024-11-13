@@ -24,17 +24,18 @@ import extract_save
 
 def live_fetcher__(index):
     try:
+        live_object = tse_connect.database_update(index, live=True)
         # fetching price list from url and saving them
-        closing_price_responce = extract_save.UrlFetcher.closing_price_download_pd(index, live=True)
+        closing_price_response = live_object.fetch_closing_price()
         # timeout error
-        if closing_price_responce is None:
+        if closing_price_response is None:
             return None
         else:
             # fetching client types parameters and saving them
-            client_types = extract_save.UrlFetcher.client_types_download_pd(index, closing_price_responce, live=True)
-            best_limits = extract_save.UrlFetcher.best_limits_fetch(index)
+            best_limits_response = live_object.fetch_best_limits()
+            client_types_response = live_object.fetch_client_types()
             pass
-        return [client_types, closing_price_responce, best_limits]
+        return [client_types_response, closing_price_response, best_limits_response]
     except:
         my_sql.log.error_write(index)
         return None
@@ -57,18 +58,18 @@ def history_fetcher__(index):
             print('skip')
             return None
         else:
-            history_object = tse_connect.history_database(index)
+            history_object = tse_connect.database_update(index, live=False)
             # fetching price list from url and saving them
             closing_price_response = history_object.fetch_closing_price()
-            best_limits_response = history_object.fetch_best_limits()
             # timeout error
             if closing_price_response is None:
                 return None
             else:
                 # fetching client types parameters and saving them
-                client_types = history_object.fetch_client_types()
+                client_types_response = history_object.fetch_client_types()
+                best_limits_response = history_object.fetch_best_limits()
                 pass
-            return [client_types, closing_price_response, best_limits_response]
+            return [client_types_response, closing_price_response, best_limits_response]
     except:
         my_sql.log.error_write(index)
         return None
@@ -85,15 +86,13 @@ def history_write__(response_list, index):
             best_limit_obj = my_sql.obj_properties.tse.best_limits_history
             analyze_obj = my_sql.obj_properties.tse.analyze_history
             sum_best_obj = my_sql.obj_properties.tse.sum_close_best_limits
-            history_object = tse_connect.history_database(index, save_limit=800)
+            history_object = tse_connect.database_update(index, live=False, save_limit=800)
             # getting saved dates of an index in main database
             main_date_list = my_sql.search_dates(tbl_name, moneymaker_obj)
             # getting saved dates of an index in analize database
             analyze_date_list = my_sql.search_dates(tbl_name, analyze_obj)
             # extracting lists form lists
-            client_response = response_list[0]
-            closing_response = response_list[1]
-            best_limits_response = response_list[2]
+            client_response, closing_response, best_limits_response = response_list
             if client_response is None or closing_response is None:
                 return None
             elif main_date_list[0] == tse_time.day_subtract(days_number=1, holiday_check=True):
@@ -117,7 +116,7 @@ def history_write__(response_list, index):
                     # analyze write
                     result = my_sql.write_table(analyze_df, tbl_name, analyze_obj, analyze_date_list)
                     scripts = tse_analize.scripts(index=index)
-                    sum_best_limits = scripts.sum_close_best_limits_generate(live=False)
+                    sum_best_limits = scripts.sum_live_best_limits_generate(live=False)
                     my_sql.write_table(sum_best_limits, tbl_name, sum_best_obj, truncate=True)
                     print(str(index) + " Completed " + str(result))
                     return result
@@ -126,26 +125,29 @@ def history_write__(response_list, index):
         return None
 
 
-def live_write__(responce_list, index):
+def live_write__(response_list, index):
     try:
+        tbl_name = "nmd" + index
         moneymaker_obj = my_sql.obj_properties.tse.moneymaker_live
         best_limits_obj = my_sql.obj_properties.tse.best_limits_live
-        tbl_name = "nmd" + index
-        client_responce = responce_list[0]
-        closing_responce = responce_list[1]
-        best_limits = responce_list[2]
-        if client_responce is None or closing_responce is None:
+        sum_best_limits_obj = my_sql.obj_properties.tse.sum_live_best_limits
+        client_response, closing_response, best_limits_response = response_list
+        live_object = tse_connect.database_update(index, live=True)
+        if client_response is None or closing_response is None:
             return None
         else:
-            pd_dataframe = tse_connect.LiveDatabaseUpdate.dataframe_create(client_responce, closing_responce, index)
-            best_linmits_df = tse_connect.LiveDatabaseUpdate.best_limits_df(index, best_limits)
+            pd_dataframe = live_object.dataframe_closing_client(closing_response, client_response)
+            best_limits_dataframe = live_object.dataframe_best_limits(best_limits_response)
+            script_obj = tse_analize.scripts(index=index, only_status=False, df_return=True)
             if pd_dataframe is None:
                 return None
             else:
                 # saving price list and client types in database
                 my_sql.write_table(pd_dataframe, tbl_name, moneymaker_obj)
-                my_sql.write_table(best_linmits_df, tbl_name, best_limits_obj)
-                del pd_dataframe, best_linmits_df
+                my_sql.write_table(best_limits_dataframe, tbl_name, best_limits_obj)
+                sum_best_limit_df = script_obj.sum_live_best_limits_generate()
+                my_sql.write_table(sum_best_limit_df, tbl_name, sum_best_limits_obj, truncate=True)
+                del pd_dataframe, best_limits_dataframe
         return True
     except:
         my_sql.log.error_write(index)

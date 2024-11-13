@@ -495,7 +495,6 @@ def record_status_return(index, definition):
 
 def dataframe_return(index, definition, rename_sum=False):
     try:
-        print(rename_sum)
         obj = scripts(index=index, only_status=False, df_return=True)
         func = "scripts." + definition + "()"
         res = getattr(obj, definition)()
@@ -503,10 +502,8 @@ def dataframe_return(index, definition, rename_sum=False):
             res['name'] = my_sql.search.names(index)
         else:
             pass
-        print(res)
         return res
     except:
-        print(sys.exc_info())
         my_sql.log.error_write("")
         return False
 
@@ -646,7 +643,7 @@ class scripts:
 
     def __return_process(self, schema, script):
         try:
-            return_object = my_sql.search.script(schema=schema, script=script, df_return=self.df_return)
+            return_object = my_sql.search.script(schema=schema, script=script, df_return=self.df_return, tbl_name=self.name)
             if self.only_status is True:
                 kk = scripts.objects  # when dataframe
                 if self.df_return is True:
@@ -723,7 +720,7 @@ class scripts:
             my_sql.log.error_write(self.index)
             return None"""
 
-    def sum_close_best_limits_generate(self, live=True):
+    def sum_live_best_limits_generate(self, live=True):
         try:
             script = self.objects.select_script(select_group=self.objects.columns.best_limits(sum_group=True)) +\
                      self.objects.from_script(name=self.name) +\
@@ -732,6 +729,13 @@ class scripts:
                 return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
             else:
                 return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
+        except:
+            my_sql.log.error_write(self.index)
+            return None
+
+    def sum_close_best_limits_generate(self):
+        try:
+            return scripts.sum_live_best_limits_generate(self, live=False)
         except:
             my_sql.log.error_write(self.index)
             return None

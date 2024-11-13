@@ -45,7 +45,6 @@ def common_member(a, b):
 def multiprocess_function_list(func, loop_list, *args):
     try:
         result_list = []
-        print(args)
         with ProcessPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(func, i, *args) for i in loop_list]
         for future in futures:
@@ -165,6 +164,7 @@ def database_writing_loop_pd(index, pd_df: pandas.DataFrame):
         my_sql.log.error_write(index)
 
 
+
 def price_list(index, pd_df: pandas.DataFrame, tbl_dates=None):
     try:
         numbers_list = []
@@ -210,9 +210,8 @@ def best_limit_bulk(dataframe, obj, live: bool = True):
     my_sql.write_table(dataframe, tbl_name, obj, truncate=True)
 
 
-def compare_lists(index_list: list, definition, df_return: bool = False, rename_sum: bool = True):
+def compare_lists(index_list: list, definition, df_return: bool = False, rename_sum: bool = True, tbl_save=False, save_obj=None):
     try:
-        print(rename_sum)
         if df_return is False:
             return_object = index_list.copy()
             status_list = multiprocess_function_list(tse_analize.record_status_return,
@@ -226,8 +225,13 @@ def compare_lists(index_list: list, definition, df_return: bool = False, rename_
             dataframe_list = multiprocess_function_list(tse_analize.dataframe_return,
                                                         index_list, definition, rename_sum)
             temp_list = dataframe_list.copy()
-            for i in range(0, len(index_list) - 1):
+            for i in range(0, len(index_list)):
                 if dataframe_list[i] is not None:
+                    if tbl_save is True:
+                        tbl_name = 'nmd' + str(index_list[i])
+                        my_sql.write_table(dataframe_list[i], tbl_name, save_obj, truncate=True)
+                    else:
+                        pass
                     continue
                 else:
                     temp_list.remove(index_list[i])
@@ -235,23 +239,17 @@ def compare_lists(index_list: list, definition, df_return: bool = False, rename_
             del temp_list[0]
             for df in temp_list:
                 return_object = pd.concat([return_object, df], axis=0, ignore_index=True)
-            print(return_object)
         return return_object
     except:
         my_sql.log.error_write("")
+        return None
 
 
-def multi_list_compare(index_list, *args, df_return: bool = False, rename_sum: bool = True):
+def multi_list_compare(index_list, *args, df_return: bool = False, rename_sum: bool = True, tbl_save=False, save_obj=None):
     try:
-        print(rename_sum)
         multi_list = []
-        if df_return is False:
-            for definition in args:
-                multi_list.append(compare_lists(index_list, definition))
-        else:
-            for definition in args:
-                multi_list.append(compare_lists(index_list, definition, df_return=df_return, rename_sum=rename_sum))
-        print(multi_list)
+        for definition in args:
+            multi_list.append(compare_lists(index_list, definition, df_return=df_return, rename_sum=rename_sum, tbl_save=tbl_save, save_obj=save_obj))
         return_list = multi_list[0]
         for i in range(1, len(multi_list)):
             return_list = common_member(return_list, multi_list[i])

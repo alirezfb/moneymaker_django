@@ -96,7 +96,7 @@ https://cdn.tsetmc.com/api/Trade/GetTradeHistory/46348559193224090/20240909/true
     
 
 
-https://cdn.tsetmc.com/api/Trade/GetTrade/46348559193224090
+                        https://cdn.tsetmc.com/api/Trade/GetTrade/46348559193224090
     etelaate lahzeyi gheymat ha
     "insCode":  -
     "dEven":    -
@@ -314,23 +314,10 @@ in tabe baraye estekhraje namad va return karde oon hatesh
 
 
 class urls:
-    def __init__(self, index):
-        self.index = index
+    def __init__(self):
+        pass
 
-    def history_closing_price(self):
-        return "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/" + self.index + "/0"
-
-    def history_client_types(self):
-        return "https://cdn.tsetmc.com/api/ClientType/GetClientTypeHistory/" + self.index
-
-    def history_best_limit(self):
-        return "https://cdn.tsetmc.com/api/BestLimits/" + self.index
-
-
-class history_database:
-    def __init__(self, index, save_limit=0):
-        self.index = index
-        self.headers = [{
+    headers = [{
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/109.0.0.0 Safari/537.36',
         }, {
@@ -340,15 +327,62 @@ class history_database:
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
                           'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
         }]
-        self.urls = urls(index)
+
+    class tse_history:
+        def __init__(self, index):
+            self.index = str(index)
+
+        def url_closing_price(self):
+            return "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/" + self.index + "/0"
+
+        def url_client_types(self):
+            return "https://cdn.tsetmc.com/api/ClientType/GetClientTypeHistory/" + self.index
+
+        def url_best_limit(self):
+            return "https://cdn.tsetmc.com/api/BestLimits/" + self.index
+
+        drop_columns_closing_price = ['priceYesterday', 'priceFirst', 'last', 'id',
+                                      'iClose', 'yClose', 'pDrCotVal', 'hEven', 'insCode']
+        drop_columns_best_limits = ['insCode']
+        drop_columns_client_types = ['recDate', 'insCode']
+        json_name_closing_price = 'closingPriceDaily'
+        json_name_client_types = 'clientType'
+        json_name_best_limits = 'bestLimits'
+
+    class tse_live:
+        def __init__(self, index):
+            self.index = str(index)
+
+        def url_closing_price(self):
+            return "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/" + self.index
+
+        def url_client_types(self):
+            return "https://cdn.tsetmc.com/api/ClientType/GetClientType/" + self.index + "/1/0"
+
+        def url_best_limit(self):
+            return "https://cdn.tsetmc.com/api/BestLimits/" + self.index
+
+        drop_columns_closing_price = ['instrument', 'nvt', 'mop', 'pRedTran', 'dEven', 'hEven',
+                                      'thirtyDayClosingHistory', 'priceChange', 'last', 'id',
+                                      'iClose', 'yClose', 'insCode', 'instrumentState.idn',
+                                      'instrumentState.dEven', 'instrumentState.hEven',
+                                      'instrumentState.insCode', 'instrumentState.lVal18AFC',
+                                      'instrumentState.lVal30', 'instrumentState.cEtaval',
+                                      'instrumentState.realHeven', 'instrumentState.underSupervision',
+                                      'instrumentState.cEtavalTitle']
+        drop_columns_best_limits = ['insCode']
+        drop_columns_client_types = ['buy_DDD_Volume', 'buy_CountDDD']
+
+
+class database_update:
+    def __init__(self, index: str, live: bool, save_limit: int = 0):
+        self.index = index
+        self.headers = urls.headers
         self.save_limit = save_limit
-        self.drop_columns_closing_price = ['priceYesterday', 'priceFirst', 'last', 'id',
-                                           'iClose', 'yClose', 'pDrCotVal', 'hEven', 'insCode']
-        self.drop_columns_client_types = ['recDate', 'insCode']
-        self.drop_columns_best_limits = ['insCode']
-        self.json_name_closing_price = 'closingPriceDaily'
-        self.json_name_client_types = 'clientType'
-        self.json_name_best_limits = 'bestLimits'
+        if live is True:
+            self.object = urls.tse_live(index)
+        else:
+            self.object = urls.tse_history(index)
 
     def __fetcher(self, url_address):
         error_count = 0
@@ -365,20 +399,20 @@ class history_database:
                     return None
 
     def fetch_closing_price(self):
-        return history_database.__fetcher(self, self.urls.history_closing_price())
+        return database_update.__fetcher(self, self.object.url_closing_price())
 
     def fetch_client_types(self):
-        return history_database.__fetcher(self, self.urls.history_client_types())
+        return database_update.__fetcher(self, self.object.url_client_types())
 
     def fetch_best_limits(self):
-        return history_database.__fetcher(self, self.urls.history_best_limit())
+        return database_update.__fetcher(self, self.object.url_best_limit())
 
     def dataframe_closing_client(self, closing_response, client_response):
         try:
-            closing_df = history_database.__create_dataframe(self, closing_response, self.json_name_closing_price,
-                                                             self.drop_columns_closing_price)
-            client_df = history_database.__create_dataframe(self, client_response, self.json_name_client_types,
-                                                            self.drop_columns_client_types)
+            closing_df = database_update.__create_dataframe(self, closing_response, obj.json_name_closing_price,
+                                                            obj.drop_columns_closing_price)
+            client_df = database_update.__create_dataframe(self, client_response, obj.json_name_client_types,
+                                                           obj.drop_columns_client_types)
             if closing_df is None or client_df is None:
                 return None
             else:
@@ -396,9 +430,9 @@ class history_database:
             return None
 
     def dataframe_best_limits(self, url_response):
-        return history_database.__create_dataframe(self, url_response,
-                                                   self.json_name_best_limits,
-                                                   self.drop_columns_best_limits)
+        return database_update.__create_dataframe(self, url_response,
+                                                  obj.json_name_best_limits,
+                                                  obj.drop_columns_best_limits)
 
     def __create_dataframe(self, url_response, json_name, drop_columns):
         try:
@@ -697,4 +731,3 @@ class market_state:
         except:
             my_sql.log.error_write("")
             return None
-

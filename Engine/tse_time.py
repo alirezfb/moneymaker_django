@@ -8,12 +8,23 @@ va zakhire sazi zaman dar database estefade mishe
 
 import datetime
 from datetime import date
+import my_sql
 
 
 # Import Section End
 
 
 # START
+
+def datetime_type_check(obj):
+    try:
+        if type(obj) is datetime.datetime:
+            return True
+        else:
+            return False
+    except:
+        my_sql.log.error_write('')
+        return False
 
 def current_time_str():
     now = datetime.datetime.now()

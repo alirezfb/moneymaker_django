@@ -70,8 +70,8 @@ def infinity_run():
     if __name__ == '__main__':
         endless = True
         index_list = my_sql.read.index(bl_check=True)
-        """index_list = ['46348559193224090']
-        index_list = index_list[:30]"""
+        index_list = ['46348559193224090']
+        #index_list = index_list[:30]
         # updating last open day and today
         extract_save.market_status()
         while endless is True:
@@ -79,30 +79,41 @@ def infinity_run():
             market_state = extract_save.UrlFetcher.market_overview(only_state=True)
             while market_state is True:
                 live_update(index_list, state_check=True)
+                print('fff')
+                sleep(300)
                 # live_best_limits = tse_analize.dataframe_return_old(index_list, "sum_live_best_limit")
                 live_best_limits = extract_save.multi_list_compare(index_list, "sum_live_best_limit", df_return=True)
                 print(live_best_limits)
-                print('dodol')
+                print('start in 30 seconds')
+                sleep(30)
+                extract_save.bulk_dataframe_save(live_best_limits, index_list,
+                                                 my_sql.obj_properties.tse.sum_live_best_limits)
+                print('koom')
+                sleep(300)
                 """temp_index = tse_analize.list_compare_old(index_list, "read_sum_live_best_limit",
                                                       "latest_ha_be_ho")"""
                 temp_index = extract_save.multi_list_compare(index_list, "read_sum_live_best_limit",
                                                              "latest_ha_be_ho")
                 print(temp_index)
+                extract_save.best_limit_bulk(temp_index,
+                                             my_sql.obj_properties.tse.bulk_some_close_best_limits, live=True)
+                print('motherfucker')
                 sleep(190)
                 pass
             if market_state is False:
                 print("MARKET CLOSED")
-                # history_update(index_list)
+                #history_update(index_list)
+                close_best_limits = extract_save.multi_list_compare(index_list, "sum_close_best_limits_generate",
+                                                                    df_return=True, tbl_save=True, rename_sum=False,
+                                                                    save_obj=my_sql.obj_properties.tse.sum_close_best_limits)
                 # temp_index = tse_analize.list_compare_old(index_list, "close_best_limit", "close_ghodrat_kh_ha")
-                temp_index = extract_save.multi_list_compare(index_list, "close_best_limit", "close_ghodrat_kh_ha")
+                temp_index = extract_save.multi_list_compare(index_list, "sum_close_best_limit_read", "close_ghodrat_kh_ha")
                 print(temp_index)
-                sleep(10)
                 # temp_index = multiprocess_function(tse_analize.list_compare, index_list, "close_best_limit", "close_ghodrat_kh_ha")
                 # close_best_limits = tse_analize.dataframe_return_old(temp_index, "all_close_best_limit", rename=False)
                 close_best_limits = extract_save.multi_list_compare(temp_index, "sum_close_best_limit_read",
                                                                     df_return=True, rename_sum=True)
                 print(close_best_limits)
-                sleep(10)
                 extract_save.best_limit_bulk(close_best_limits,
                                              my_sql.obj_properties.tse.bulk_some_close_best_limits, live=False)
                 print('done')
