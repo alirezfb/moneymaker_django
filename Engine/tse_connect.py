@@ -409,10 +409,10 @@ class database_update:
 
     def dataframe_closing_client(self, closing_response, client_response):
         try:
-            closing_df = database_update.__create_dataframe(self, closing_response, obj.json_name_closing_price,
-                                                            obj.drop_columns_closing_price)
-            client_df = database_update.__create_dataframe(self, client_response, obj.json_name_client_types,
-                                                           obj.drop_columns_client_types)
+            closing_df = database_update.__create_dataframe(self, closing_response, self.object.json_name_closing_price,
+                                                            self.object.drop_columns_closing_price)
+            client_df = database_update.__create_dataframe(self, client_response, self.object.json_name_client_types,
+                                                           self.object.drop_columns_client_types)
             if closing_df is None or client_df is None:
                 return None
             else:
@@ -431,8 +431,8 @@ class database_update:
 
     def dataframe_best_limits(self, url_response):
         return database_update.__create_dataframe(self, url_response,
-                                                  obj.json_name_best_limits,
-                                                  obj.drop_columns_best_limits)
+                                                  self.object.json_name_best_limits,
+                                                  self.object.drop_columns_best_limits)
 
     def __create_dataframe(self, url_response, json_name, drop_columns):
         try:

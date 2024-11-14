@@ -218,6 +218,7 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, s
                 pass
             # making a copy to protect form changes
             clone_dataframe = dataframe.copy(deep=False)
+
             # extract schema and datefield name from object
             schema = obj.schema
             date_field = obj.date_field

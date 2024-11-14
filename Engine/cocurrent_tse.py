@@ -102,7 +102,7 @@ def infinity_run():
                 pass
             if market_state is False:
                 print("MARKET CLOSED")
-                #history_update(index_list)
+                history_update(index_list)
                 close_best_limits = extract_save.multi_list_compare(index_list, "sum_close_best_limits_generate",
                                                                     df_return=True, tbl_save=True, rename_sum=False,
                                                                     save_obj=my_sql.obj_properties.tse.sum_close_best_limits)

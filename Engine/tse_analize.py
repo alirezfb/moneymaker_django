@@ -23,7 +23,6 @@ except:
     import tse_time
     import my_sql
 
-
 # Import Section
 
 # warnings.filterwarnings('ignore')
