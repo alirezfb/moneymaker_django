@@ -44,7 +44,7 @@ def script():
 
 def pd_to_html():
     try:
-        index_list = my_sql.read.index(bl_check=True)
+        index_list = my_sql.Read.index(bl_check=True)
         df = tse_analize.dataframe_return_old(index_list, "close_best_limit")
         df_html = df.to_html(justify="center", classes="table table-bordered")
         return df_html
@@ -63,18 +63,18 @@ def html_best_limits_all(live=True):
 
 def history_to_html(index, schema):
     try:
-        df = my_sql.read.all_tables(index, schema)
+        df = my_sql.Read.all_tables(index, schema)
         df_html = df.to_html(justify="center", classes="table table-bordered")
         return df_html
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return None
 
 def close_best_limit_tohtml(index, schema):
     try:
-        df = my_sql.read.all_tables(index, schema)
+        df = my_sql.Read.all_tables(index, schema)
         df_html = df.to_html(justify="center", classes="table table-bordered")
         return df_html
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return None

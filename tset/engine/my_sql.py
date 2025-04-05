@@ -18,7 +18,7 @@ import re
 import logging
 import os
 import traceback
-from . import tse_time
+import tse_time
 import sys
 from threading import Thread
 from multiprocessing import pool

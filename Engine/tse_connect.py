@@ -395,7 +395,7 @@ class database_update:
                     sleep(random.random())
                 else:
                     # error handling
-                    my_sql.log.error_write(self.index)
+                    my_sql.Log.error_write(self.index)
                     return None
 
     def fetch_closing_price(self):
@@ -426,7 +426,7 @@ class database_update:
             return_df.drop(return_df.index[loop_length - 1:return_df.shape[0]], axis=0, inplace=True)
             return return_df
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def dataframe_best_limits(self, url_response):
@@ -450,7 +450,7 @@ class database_update:
             return df
         except:
             # error handling
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
 
@@ -484,7 +484,7 @@ def tblnamadha_update():
             pass
         pass
     if error_count >= 10:
-        my_sql.log.error_write("0")
+        my_sql.Log.error_write("0")
         return None
     pass
 
@@ -515,7 +515,7 @@ class LiveDatabaseUpdate():
                     pass
                 else:
                     # error handling
-                    my_sql.log.error_write(index)
+                    my_sql.Log.error_write(index)
                     return None
                 pass
             pass
@@ -546,7 +546,7 @@ class LiveDatabaseUpdate():
                     pass
                 else:
                     # error handling
-                    my_sql.log.error_write(index)
+                    my_sql.Log.error_write(index)
                     return None
                 pass
             pass
@@ -578,7 +578,7 @@ class LiveDatabaseUpdate():
                     pass
                 else:
                     # error handling
-                    my_sql.log.error_write(index)
+                    my_sql.Log.error_write(index)
                     return None
                 pass
             pass
@@ -592,7 +592,7 @@ class LiveDatabaseUpdate():
             del closing_df
             return client_df
         except:
-            my_sql.log.error_write(index)
+            my_sql.Log.error_write(index)
 
     def closing_price_df(index, url_responce):
         try:
@@ -611,7 +611,7 @@ class LiveDatabaseUpdate():
             return dataframe
         except:
             # error handling
-            my_sql.log.error_write(index)
+            my_sql.Log.error_write(index)
             return None
 
     def client_types_df(index, dataframe, url_responce):
@@ -625,7 +625,7 @@ class LiveDatabaseUpdate():
             return return_dataframe
         except:
             # error handling
-            my_sql.log.error_write(index)
+            my_sql.Log.error_write(index)
             return None
 
     def best_limits_df(index, url_responce):
@@ -638,7 +638,7 @@ class LiveDatabaseUpdate():
             return dataframe
         except:
             # error handling
-            my_sql.log.error_write(index)
+            my_sql.Log.error_write(index)
             return None
 
     @staticmethod
@@ -667,7 +667,7 @@ class LiveDatabaseUpdate():
                     pass
                 else:
                     # error handling
-                    my_sql.log.error_write("")
+                    my_sql.Log.error_write("")
                     return None
                 pass
             pass
@@ -704,7 +704,7 @@ class market_state:
                 return req
             except:
                 if i > 1:
-                    my_sql.log.error_write("")
+                    my_sql.Log.error_write("")
                     return None
                 else:
                     sleep(random.randint(0, 2))
@@ -712,7 +712,7 @@ class market_state:
         try:
             return pd.json_normalize(self.response.json()["marketOverview"])
         except:
-            my_sql.log.error_write("")
+            my_sql.Log.error_write("")
             return None
 
     def state(self):
@@ -722,12 +722,12 @@ class market_state:
             else:
                 return False
         except:
-            my_sql.log.error_write("")
+            my_sql.Log.error_write("")
             return None
 
     def last_open(self):
         try:
             return self.dataframe.loc[0, "marketActivityDEven"]
         except:
-            my_sql.log.error_write("")
+            my_sql.Log.error_write("")
             return None

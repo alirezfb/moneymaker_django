@@ -8,12 +8,12 @@ import pandas
 
 # Import Section
 
-from . import tse_connect
-from . import tse_analize
-from . import my_sql
+import tse_connect
+import tse_analize
+import my_sql
 from datetime import datetime
-from . import tse_time
-from . import extract_save
+import tse_time
+import extract_save
 from concurrent.futures import ProcessPoolExecutor
 import threading
 import multiprocessing

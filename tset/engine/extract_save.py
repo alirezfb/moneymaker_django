@@ -5,15 +5,15 @@ parameter va rooz haye jadid hastesh
 """
 import sys
 import threading
-from . import tse_time
+import tse_time
 import pandas as pd
 
 # Import Section
-from . import tse_connect
-from . import tse_analize
+import tse_connect
+import tse_analize
 import pandas
-from . import my_sql
-from . import tse_time
+import my_sql
+import tse_time
 from time import sleep
 
 

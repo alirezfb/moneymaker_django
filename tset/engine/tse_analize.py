@@ -7,8 +7,8 @@ va bad karaye mohasebati va analize ro anjam mide va save mikone va barmigardoon
 
 # Import Section
 import sys
-from . import tse_time
-from . import my_sql
+import tse_time
+import my_sql
 import numpy as np
 from time import sleep
 import pandas as pd

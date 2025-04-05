@@ -36,22 +36,23 @@ def live_fetcher__(index):
             pass
         return [client_types_response, closing_price_response, best_limits_response]
     except:
-        my_sql.log.error_write(index)
+        my_sql.Log.error_write(index)
         return None
 
 
 def history_fetcher__(index):
     try:
         tbl_name = "nmd" + str(index)
+        print(tbl_name)
         # getting saved dates of an index in main database
         # last open day
         market_obj = tse_connect.market_state()
         main_date_list = my_sql.search_dates(tbl_name,
-                                             my_sql.obj_properties.tse.moneymaker_history, list_return=True)
+                                             my_sql.ObjProperties.Tse.MoneymakerHistory, list_return=True)
         analyze_date_list = my_sql.search_dates(tbl_name,
-                                                my_sql.obj_properties.tse.analyze_history, list_return=True)
+                                                my_sql.ObjProperties.Tse.AnalyzeHistory, list_return=True)
         last_open = my_sql.read_table("market_status",
-                                      my_sql.obj_properties.tse.manager.market_status,
+                                      my_sql.ObjProperties.Tse.Manager.MarketStatus,
                                       "marketActivityDEven", list_return=False)
         if last_open == main_date_list[0] and last_open == analyze_date_list[0]:
             print('skip')
@@ -70,7 +71,7 @@ def history_fetcher__(index):
                 pass
             return [client_types_response, closing_price_response, best_limits_response]
     except:
-        my_sql.log.error_write(index)
+        my_sql.Log.error_write(index)
         return None
 
 
@@ -81,10 +82,10 @@ def history_write__(response_list, index):
         else:
             # name
             tbl_name = 'nmd' + str(index)
-            moneymaker_obj = my_sql.obj_properties.tse.moneymaker_history
-            best_limit_obj = my_sql.obj_properties.tse.best_limits_history
-            analyze_obj = my_sql.obj_properties.tse.analyze_history
-            sum_best_obj = my_sql.obj_properties.tse.sum_close_best_limits
+            moneymaker_obj = my_sql.ObjProperties.Tse.MoneymakerHistory
+            best_limit_obj = my_sql.ObjProperties.Tse.BestLimitsHistory
+            analyze_obj = my_sql.ObjProperties.Tse.AnalyzeHistory
+            sum_best_obj = my_sql.ObjProperties.Tse.SumCloseBestLimits
             history_object = tse_connect.database_update(index, live=False, save_limit=800)
             # getting saved dates of an index in main database
             main_date_list = my_sql.search_dates(tbl_name, moneymaker_obj)
@@ -120,16 +121,16 @@ def history_write__(response_list, index):
                     print(str(index) + " Completed " + str(result))
                     return result
     except:
-        my_sql.log.error_write(index)
+        my_sql.Log.error_write(index)
         return None
 
 
 def live_write__(response_list, index):
     try:
         tbl_name = "nmd" + index
-        moneymaker_obj = my_sql.obj_properties.tse.moneymaker_live
-        best_limits_obj = my_sql.obj_properties.tse.best_limits_live
-        sum_best_limits_obj = my_sql.obj_properties.tse.sum_live_best_limits
+        moneymaker_obj = my_sql.ObjProperties.Tse.MoneymakerLive
+        best_limits_obj = my_sql.ObjProperties.Tse.BestLimitsLive
+        sum_best_limits_obj = my_sql.ObjProperties.Tse.SumLiveBestLimits
         client_response, closing_response, best_limits_response = response_list
         live_object = tse_connect.database_update(index, live=True)
         if client_response is None or closing_response is None:
@@ -149,5 +150,5 @@ def live_write__(response_list, index):
                 del pd_dataframe, best_limits_dataframe
         return True
     except:
-        my_sql.log.error_write(index)
+        my_sql.Log.error_write(index)
         return None

@@ -4,30 +4,31 @@
     kill USER username;
 """
 
+from sqlalchemy import create_engine
+from time import sleep
 import mariadb
 import pandas
-from sqlalchemy import create_engine
 import re
 import traceback
 import sys
-from time import sleep
 import random
 import pandas as pd
 import tse_time
 
+
 # START
 
-class obj_properties:
+class ObjProperties:
     def __init__(self):
         pass
 
-    class crypto:
+    class Crypto:
         def __init__(self):
             pass
 
         obj_type = 'crypto'
 
-        class chart_data:
+        class ChartData:
             fa_charset = False
             date_field = 'open_time'
             schema = 'crypto_chart_data'
@@ -45,18 +46,18 @@ class obj_properties:
                                     "u2 text null,"
                                     "u3 text null")
 
-    class tse:
+    class Tse:
         def __init__(self):
             self.obj_type = 'tse'
             pass
 
         obj_type = 'tse'
 
-        class manager:
+        class Manager:
             def __str__(self):
                 pass
 
-            class market_status:
+            class MarketStatus:
                 fa_charset = False
                 date_field = 'todayDEven'
                 obj_type = 'tse'
@@ -64,7 +65,7 @@ class obj_properties:
                 table_create_columns = ("todayDEven INT UNIQUE NOT NULL PRIMARY KEY,"
                                         "marketActivityDEven INT NULL")
 
-        class moneymaker_history:
+        class MoneymakerHistory:
             fa_charset = False
             date_field = 'dEven'
             obj_type = 'tse'
@@ -90,7 +91,7 @@ class obj_properties:
                                     "qTotTran5J varchar(20) NOT NULL,"
                                     "qTotCap varchar(20) NOT NULL")
 
-        class moneymaker_live:
+        class MoneymakerLive:
             fa_charset = False
             date_field = 'finalLastDate'
             time_field = 'lastHEven'
@@ -118,7 +119,7 @@ class obj_properties:
                                     "qTotTran5J varchar(20) NOT NULL,"
                                     "qTotCap varchar(20) NOT NULL")
 
-        class analyze_history:
+        class AnalyzeHistory:
             fa_charset = False
             date_field = 'dEven'
             obj_type = 'tse'
@@ -134,14 +135,14 @@ class obj_properties:
                                    "ghodrat_foha_foho varchar(20) NOT NULL," \
                                    "ghodrat_hjmfoha_hjmfoho varchar(20) NOT NULL"
 
-        class analyze_live:
+        class AnalyzeLive:
             fa_charset = False
             date_field = 'finalLastDate'
             time_field = 'lastHEven'
             obj_type = 'tse'
             schema = 'live_analyze_update'
 
-        class best_limits_live:
+        class BestLimitsLive:
             fa_charset = False
             date_field = 'datetime'
             obj_type = 'tse'
@@ -155,7 +156,7 @@ class obj_properties:
                                     "zOrdMeOf mediumint null,"
                                     "qTitMeOf int null")
 
-        class best_limits_history:
+        class BestLimitsHistory:
             fa_charset = False
             date_field = ''
             obj_type = 'tse'
@@ -168,7 +169,7 @@ class obj_properties:
                                     "zOrdMeOf bigint null,"
                                     "qTitMeOf bigint null")
 
-        class sum_close_best_limits:
+        class SumCloseBestLimits:
             fa_charset = False
             date_field = ''
             obj_type = 'tse'
@@ -180,7 +181,7 @@ class obj_properties:
                                     "zOrdMeOf mediumint null,"
                                     "qTitMeOf int null")
 
-        class sum_live_best_limits:
+        class SumLiveBestLimits:
             fa_charset = False
             date_field = ''
             obj_type = 'tse'
@@ -192,9 +193,9 @@ class obj_properties:
                                     "zOrdMeOf mediumint null,"
                                     "qTitMeOf int null")
 
-        class bulk_some_close_best_limits:
+        class BulkSomeCloseBestLimits:
             def __init__(self):
-                self.obj_type = obj_properties.tse.obj_type
+                self.obj_type = ObjProperties.Tse.obj_type
 
             fa_charset = True
             date_field = ''
@@ -207,6 +208,24 @@ class obj_properties:
                                     "pMeOf mediumint null,"
                                     "zOrdMeOf mediumint null,"
                                     "qTitMeOf int null")
+
+        class TblLog:
+            def __init__(self):
+                pass
+
+            obj_type = "manager"
+
+        class TblNamadha:
+            def __init__(self):
+                pass
+
+            schema = "manager"
+
+        class TblBlacklist:
+            def __init__(self):
+                pass
+
+            schema = "manager"
 
 
 def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, save_limit=10000):
@@ -287,42 +306,32 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, s
             # return saved entries
             return row_save_count
         except:
-            log.error_write(tbl_name)
-            error_check = True
-            if i == 0:
-                # when there is a null or nan record in dataframe
-                clone_dataframe = dataframe.copy(deep=False)
-                clone_dataframe.fillna(0)
-            else:
-                try:
+            try:
+                Log.error_write(tbl_name)
+                error_check = True
+                if i == 0:
+                    # when there is a null or nan record in dataframe
+                    clone_dataframe = dataframe.copy(deep=False)
+                    clone_dataframe.fillna(0)
+                else:
                     engine.dispose()
                     del engine
-                except:
-                    pass
-                return 0
+            except:
+                pass
+            return 0
 
 
 def read_table(tbl_name, obj, column_name=None, list_return=True):
     try:
         # baz kardane sql va khandane tblnamadhatemp
-        conn = mariadb.connect(
-            user="root",
-            password="Unique2213",
-            host="localhost",
-            port=3306,
-            database=obj.schema
-        )
-        cur = conn.cursor()
+        db_object = DbConnect(obj.schema)
         if column_name is not None:
-            cur.execute(r"SELECT %s FROM %s "
-                        % (column_name, tbl_name))
+            cur = db_object.select(r"SELECT %s FROM %s "
+                                   % (column_name, tbl_name))
         else:
-            cur.execute(r"SELECT * FROM %s "
-                        % tbl_name)
+            cur = db_object.select(r"SELECT * FROM %s "
+                                   % tbl_name)
             pass
-        conn.commit()
-        conn.close()
-        del conn
         if list_return is True:
             return_object = cur.fetchall()
             if len(return_object) < 1:
@@ -336,14 +345,7 @@ def read_table(tbl_name, obj, column_name=None, list_return=True):
             else:
                 return return_object[0]
     except:
-        try:
-            conn.commit()
-            conn.close()
-            del conn
-            pass
-        except:
-            pass
-        log.error_write("")
+        Log.error_write("")
 
 
 def truncate_table(schema, tbl_name):
@@ -353,27 +355,11 @@ def truncate_table(schema, tbl_name):
         else:
             script = "truncate table " + tbl_name
             # baz kardane sql va khandane tblnamadhatemp
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database=schema
-            )
-            cur = conn.cursor()
-            cur.execute(script)
-            conn.commit()
-            conn.close()
-            del conn
+            db_object = DbConnect(schema)
+            db_object.execute(script)
             return True
     except:
-        try:
-            conn.commit()
-            conn.close()
-            del conn
-        except:
-            pass
-        log.error_write(search.index(''))
+        Log.error_write(Search.index(''))
         return False
 
 
@@ -386,31 +372,21 @@ def search_dates(tbl_name, obj, list_return=True):
         else:
             pass
         # baz kardane sql va khandane tblnamadhatemp
-        conn = mariadb.connect(
-            user="root",
-            password="Unique2213",
-            host="localhost",
-            port=3306,
-            database=schema
-        )
-        cur = conn.cursor()
-        cur.execute(r"SELECT %s FROM %s ORDER BY %s DESC"
-                    % (date_field, tbl_name, date_field))
-        conn.commit()
-        conn.close()
-        del conn
+        db_object = DbConnect(schema)
+        cur = db_object.select("SELECT %s FROM %s ORDER BY %s DESC"
+                               % (date_field, tbl_name, date_field))
         if list_return is True:
             temp_list = cur.fetchall()
-            return_list = []
-            for i in range(0, len(temp_list)):
-                if tse_time.datetime_type_check(temp_list[i][0]) is True:
-                    return_list.append(tse_time.int_db_form(temp_list[i][0]))
+            with [] as return_list:
+                for i in range(0, len(temp_list)):
+                    if tse_time.datetime_type_check(temp_list[i][0]) is True:
+                        return_list.append(tse_time.int_db_form(temp_list[i][0]))
+                    else:
+                        return_list.append(int(temp_list[i][0]))
+                if len(return_list) < 1:
+                    return [0]
                 else:
-                    return_list.append(int(temp_list[i][0]))
-            if len(return_list) < 1:
-                return [0]
-            else:
-                return return_list
+                    return return_list
         else:
             temp_list = cur.fetchone()
             if temp_list is None:
@@ -418,18 +394,14 @@ def search_dates(tbl_name, obj, list_return=True):
             else:
                 return temp_list[0]
     except:
-        log.error_write("")
-        try:
-            conn.commit()
-            conn.close()
-            del conn
-            pass
-        except:
-            pass
+        Log.error_write("")
         return [0]
 
 
-class read:
+class Read:
+    def __init__(self):
+        pass
+
     """
     in function baraye khandan va bargardane
     nam namad ha az table tblonamadha hastesh
@@ -441,18 +413,8 @@ class read:
         while error_count < 3:
             try:
                 # baz kardane sql va khandane tblnamadha
-                conn = mariadb.connect(
-                    user="root",
-                    password="Unique2213",
-                    host="localhost",
-                    port=3306,
-                    database="manager"
-                )
-                cur = conn.cursor()
-                cur.execute(r"SELECT name FROM tblnamadha")
-                conn.commit()
-                conn.close()
-                del conn
+                db_object = DbConnect("manager")
+                cur = db_object.select(r"SELECT name FROM tblnamadha")
                 # loop baraye estekhraj kardane esme namadha
                 namadha = []
                 for i in cur:
@@ -460,37 +422,23 @@ class read:
                     pass
                 return namadha
             except:
-                try:
-                    conn.commit()
-                    conn.close()
-                    del conn
-                    pass
-                except:
-                    pass
                 error_count += 1
-                log.error_write("")
+                Log.error_write("")
                 pass
             pass
         # return if error occured
         return None
 
+    @staticmethod
     def index(bl_check=False):
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database="manager"
-            )
-            cur = conn.cursor()
-            cur.execute(r"SELECT namad_index FROM tblnamadha")
-            conn.commit()
-            conn.close()
-            del conn
+            script = "SELECT namad_index FROM tblnamadha"
+            schema = ObjProperties.Tse.TblNamadha.schema
+            db_object = DbConnect(schema)
+            cur = db_object.select(script)
             if bl_check is True:
-                blacklist = black_list.read()
+                blacklist = BlackList.read()
                 pass
             else:
                 blacklist = []
@@ -506,26 +454,20 @@ class read:
                 pass
             return namadha_index
         except:
-            try:
-                conn.commit()
-                conn.close()
-                del conn
-                pass
-            except:
-                pass
-            log.error_write("")
+            Log.error_write("")
 
     """def analize_list(self):"""
 
+    @staticmethod
     def all_tables(index, schema):
         try:
             # generating table name
             namad_symbol = "nmd" + str(index)
             script = 'SELECT * FROM ' + namad_symbol + ' LIMIT 100'
             # creating database connection string
-            connecion_string = "mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/" + schema
+            connection_string = "mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/" + schema
             # connecting to database
-            engine = create_engine(connecion_string)
+            engine = create_engine(connection_string)
             data = pd.read_sql(script, engine)
             engine.dispose()
             del engine
@@ -537,12 +479,15 @@ class read:
                 pass
             except:
                 pass
-            log.error_write(index)
+            Log.error_write(index)
             return None
 
 
-class search:
+class Search:
+    def __init__(self):
+        pass
 
+    @staticmethod
     def script(schema: str, script: str, df_return=True, tbl_name=None):
         try:
             if tbl_name is not None:
@@ -561,18 +506,8 @@ class search:
                 pass
             else:
                 # baz kardane sql va khandane tblnamadhatemp
-                conn = mariadb.connect(
-                    user="root",
-                    password="Unique2213",
-                    host="localhost",
-                    port=3306,
-                    database=schema
-                )
-                cur = conn.cursor()
-                cur.execute(script)
-                conn.commit()
-                conn.close()
-                del conn
+                db_object = DbConnect(schema)
+                cur = db_object.select(script)
                 try:
                     return_object = cur.fetchall()
                 except:
@@ -584,94 +519,53 @@ class search:
                     engine.dispose()
                     del engine
                 else:
-                    conn.commit()
-                    conn.close()
-                    del conn
+                    pass
                 pass
             except:
                 pass
-            log.error_write(search.index(''))
+            Log.error_write(Search.index(''))
             return None
         pass
 
+    @staticmethod
     def any_table_records(namad_index, table_name, selected_index, schema, searched_item=None, searched_index=None):
-        error_count = 0
-        while error_count < 7:
-            try:
-                # baz kardane sql va khandane tblnamadhatemp
-                conn = mariadb.connect(
-                    user="root",
-                    password="Unique2213",
-                    host="localhost",
-                    port=3306,
-                    database=schema
-                )
-                cur = conn.cursor()
-                if searched_index or searched_item is None:
-                    cur.execute(("SELECT %s FROM %s"
-                                 % (selected_index, table_name)))
-                else:
-                    cur.execute(("SELECT %s FROM %s WHERE %s LIKE %s"
-                                 % (selected_index, table_name, searched_index, searched_item)))
-                conn.commit()
-                conn.close()
-                del conn
-                temp = cur.fetchall()
-                result = []
+        try:
+            # baz kardane sql va khandane tblnamadhatemp
+            db_object = DbConnect(schema)
+            if searched_index or searched_item is None:
+                script = ("SELECT %s FROM %s"
+                          % (selected_index, table_name))
+            else:
+                script = ("SELECT %s FROM %s WHERE %s LIKE %s"
+                          % (selected_index, table_name,
+                             searched_index, searched_item))
+            cur = db_object.select(script)
+            temp = cur.fetchall()
+            with [] as result:
                 for i in temp:
                     result.append(i[0])
                     pass
-                return result
-            except:
-                try:
-                    conn.commit()
-                    conn.close()
-                    del conn
-                    pass
-                except:
-                    pass
-                error_count += 1
-                sleep(random.random())
-                if error_count >= 7:
-                    log.error_write(search.index(namad_index))
-                    return None
-                    pass
-                else:
-                    pass
-                pass
+            return result
+        except:
+            Log.error_write(Search.index(namad_index))
             return None
-        pass
 
-    def names(self):
+    @staticmethod
+    def names(namad_tbl_name):
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database="manager"
-            )
-            cur = conn.cursor()
-            cur.execute(("SELECT name FROM tblnamadha WHERE namad_index LIKE %s"
-                         % (self)))
-            conn.commit()
-            conn.close()
-            del conn
+            schema = ObjProperties.Tse.TblNamadha.schema
+            db_object = DbConnect(schema)
+            script = ("SELECT name FROM tblnamadha WHERE namad_index LIKE %s"
+                      % (namad_tbl_name))
+            cur = db_object.select(script)
             result = cur.fetchone()[0]
             return result
         except:
-            try:
-                conn.commit()
-                conn.close()
-                del conn
-                pass
-            except:
-                pass
-            log.error_write(search.index(self))
+            Log.error_write(Search.index(namad_tbl_name))
             return None
-        pass
 
+    @staticmethod
     def table(table_name: str = None, index=None, schema: str = None):
         if table_name is None:
             table_name = "nmd" + str(index)
@@ -685,68 +579,38 @@ class search:
             pass
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database=schema
-            )
-            cur = conn.cursor()
-            cur.execute(("SHOW TABLES FROM %s LIKE '%s'"
-                         % (schema,
-                            table_name)))
-            conn.commit()
-            conn.close()
-            del conn
+            db_object = DbConnect(schema)
+            script = ("SHOW TABLES FROM %s LIKE '%s'"
+                      % (schema,
+                         table_name))
+            cur = db_object.select(script)
             if cur.fetchone() is None:
                 return False
             else:
                 return True
         except:
-            try:
-                conn.commit()
-                conn.close()
-                del conn
-                pass
-            except:
-                pass
-            log.error_write(search.index(table_name))
+            Log.error_write(Search.index(table_name))
             return None
 
-    def index(self):
+    @staticmethod
+    def index(namad_tbl_name):
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database="manager"
-            )
-            cur = conn.cursor()
-            result = cur.execute(r"SELECT namad_index FROM tblnamadha WHERE name LIKE '%s'"
-                                 % (self))
-            result = result.fetchone()
-            conn.commit()
-            conn.close()
-            del conn
-            result = result[0]
+            schema = ObjProperties.Tse.TblNamadha.schema
+            db_object = DbConnect(schema)
+            script = (r"SELECT namad_index FROM tblnamadha WHERE name LIKE '%s'"
+                      % namad_tbl_name)
+            cur = db_object.select(script)
+            result = cur.fetchone()[0]
             return result
         except:
-            try:
-                conn.commit()
-                conn.close()
-                del conn
-                pass
-            except:
-                pass
-            log.error_write(self)
+            Log.error_write(namad_tbl_name)
             return None
         pass
 
+    @staticmethod
     def dates(index, tbl_name=None, schema: str = None):
-        if search.table(index=index) is not True:
+        if Search.table(index=index) is not True:
             return [0]
         elif schema is None:
             schema = "moneymaker"
@@ -755,20 +619,11 @@ class search:
             pass
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database=schema
-            )
-            cur = conn.cursor()
-            cur.execute(r"SELECT dEven FROM  %s "
-                        % (tbl_name))
+            db_object = DbConnect(schema)
+            script = (r"SELECT dEven FROM  %s "
+                      % tbl_name)
+            cur = db_object.select(script)
             q_result = cur.fetchall()
-            conn.commit()
-            conn.close()
-            del conn
             if q_result is None or len(q_result) == 0:
                 return [0]
             else:
@@ -786,79 +641,9 @@ class search:
                 return return_list
                 pass
         except:
-            try:
-                conn.commit()
-                conn.close()
-                del conn
-                pass
-            except:
-                pass
-            log.error_write(search.names(index))
+            Log.error_write(Search.names(index))
             return [0]
         pass
-
-
-class check:
-    def duplicate_date(index):
-        try:
-            closing_price_list = read_temp.closing_price(index, 0)
-            date_list = search.dates(search.names(index))
-            duplicate_counter = 0
-            unique_counter = 0
-            for i in closing_price_list:
-                if i[0] in date_list:
-                    duplicate_counter += 1
-                    pass
-                else:
-                    unique_counter += 1
-                    break
-                    pass
-                if duplicate_counter > 15:
-                    break
-                    pass
-                else:
-                    pass
-                pass
-            #True if it's duplicate and there is no unique date
-            if duplicate_counter > 15 and unique_counter < 1:
-                return True
-            #False if it's not duplicate or there is a unique date
-            else:
-                return False
-            pass
-        except:
-            log.error_write(search.names(index))
-
-    def duplicate_date_pd(dataframe):
-        try:
-            closing_price_list = dataframe.loc[:, 'dEven']
-            index = dataframe.loc[0, 'insCode']
-            date_list = search.dates(search.names(index))
-            duplicate_counter = 0
-            unique_counter = 0
-            for i in closing_price_list:
-                if str(i) in date_list:
-                    duplicate_counter += 1
-                    pass
-                else:
-                    unique_counter += 1
-                    break
-                    pass
-                if duplicate_counter > 15:
-                    break
-                    pass
-                else:
-                    pass
-                pass
-            #True if it's duplicate and there is no unique date
-            if duplicate_counter > 15 and unique_counter < 1:
-                return True
-            #False if it's not duplicate or there is a unique date
-            else:
-                return False
-            pass
-        except:
-            log.error_write(index)
 
 
 """
@@ -869,97 +654,86 @@ tarahi shode"""
 
 def create_table(obj, tbl_name=None, full_index=False, tse=True):
     try:
+        index_list = []
         # when we want to create a full database for tse
         if full_index is True:
             if tse is True:
-                index_list = read.index()
+                index_list = Read.index()
             else:
                 #index_list = read.symbols()
                 pass
         else:
             index_list = [tbl_name]
         # engine
-        conn = mariadb.connect(
-            user="root",
-            password="Unique2213",
-            host="localhost",
-            port=3306,
-            database=obj.schema
-        )
+        db_object = DbConnect(obj.schema)
         for i in index_list:
             if search_table(tbl_name, obj) is False:
                 try:
-                    cur = conn.cursor()
                     script = ("CREATE TABLE IF NOT EXISTS %s ( \n" % i +
                               obj.table_create_columns + "\n )")
                     if obj.fa_charset is True:
                         script += "\ncharset = utf8mb4;"
                     else:
                         pass
-                    cur.execute(script)
-                    conn.commit()
+                    cur = db_object.select(script)
                 except:
-                    log.error_write(i)
+                    Log.error_write(i)
                     continue
             else:
                 #badan bayad gozine debug ezafe beshe
                 continue
-        conn.close()
-        del conn
         return True
     except:
-        log.error_write('')
+        Log.error_write('')
         return None
 
 
 class HistoryTableCreate:
-    def price_table(self=None):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def price_table(namad_index=None):
         try:
             # self is symbol's index
-            if self is None:
-                index_list = read.index()
+            if namad_index is None:
+                index_list = Read.index()
                 pass
             else:
-                index_list = [self]
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database="moneymaker"
-            )
+                index_list = [namad_index]
+            schema = ObjProperties.Tse.MoneymakerHistory.schema
+            db_object = DbConnect(schema)
             for i in index_list:
-                if search.table(index=i) is False:
+                if Search.table(index=i) is False:
                     try:
                         name = "nmd" + str(i)
-                        cur = conn.cursor()
-                        cur.execute("CREATE TABLE IF NOT EXISTS %s ("
-                                    "dEven varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
-                                    "buy_I_Count varchar(20) NOT NULL,"
-                                    "buy_I_Volume varchar(20) NOT NULL,"
-                                    "sell_I_Count varchar(20) NOT NULL,"
-                                    "sell_I_Volume varchar(20) NOT NULL,"
-                                    "buy_N_Count varchar(20) NOT NULL,"
-                                    "buy_N_Volume varchar(20) NOT NULL,"
-                                    "sell_N_Count varchar(20) NOT NULL,"
-                                    "sell_N_Volume varchar(20) NOT NULL,"
-                                    "buy_I_Value varchar(20) NOT NULL,"
-                                    "buy_N_Value varchar(20) NOT NULL,"
-                                    "sell_I_Value varchar(20) NOT NULL,"
-                                    "sell_N_Value varchar(20) NOT NULL,"
-                                    "priceChange varchar(20) NOT NULL,"
-                                    "priceMin varchar(20) NOT NULL,"
-                                    "priceMax varchar(20) NOT NULL,"
-                                    "pClosing varchar(20) NOT NULL,"
-                                    "zTotTran varchar(20) NOT NULL,"
-                                    "qTotTran5J varchar(20) NOT NULL,"
-                                    "qTotCap varchar(20) NOT NULL"
-                                    ")"
-                                    % (name))
-                        conn.commit()
+                        script = ("CREATE TABLE IF NOT EXISTS %s ("
+                                  "dEven varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
+                                  "buy_I_Count varchar(20) NOT NULL,"
+                                  "buy_I_Volume varchar(20) NOT NULL,"
+                                  "sell_I_Count varchar(20) NOT NULL,"
+                                  "sell_I_Volume varchar(20) NOT NULL,"
+                                  "buy_N_Count varchar(20) NOT NULL,"
+                                  "buy_N_Volume varchar(20) NOT NULL,"
+                                  "sell_N_Count varchar(20) NOT NULL,"
+                                  "sell_N_Volume varchar(20) NOT NULL,"
+                                  "buy_I_Value varchar(20) NOT NULL,"
+                                  "buy_N_Value varchar(20) NOT NULL,"
+                                  "sell_I_Value varchar(20) NOT NULL,"
+                                  "sell_N_Value varchar(20) NOT NULL,"
+                                  "priceChange varchar(20) NOT NULL,"
+                                  "priceMin varchar(20) NOT NULL,"
+                                  "priceMax varchar(20) NOT NULL,"
+                                  "pClosing varchar(20) NOT NULL,"
+                                  "zTotTran varchar(20) NOT NULL,"
+                                  "qTotTran5J varchar(20) NOT NULL,"
+                                  "qTotCap varchar(20) NOT NULL"
+                                  ")"
+                                  % name)
+                        script_result = db_object.execute(script)
                         pass
                     except:
-                        log.error_write(i)
+                        Log.error_write(i)
                         continue
                     pass
                 else:
@@ -967,16 +741,16 @@ class HistoryTableCreate:
                     continue
                     pass
                 pass
-            conn.close()
             return True
         except:
-            log.error_write('')
+            Log.error_write('')
             return None
 
-    def analize_table(index=None, schema: str = None):
+    @staticmethod
+    def analyze_table(index=None, schema: str = None):
         # self is symbol's index
         if index is None:
-            index_list = read.index()
+            index_list = Read.index()
             pass
         else:
             index_list = [index]
@@ -986,119 +760,102 @@ class HistoryTableCreate:
             pass
         else:
             pass
-        conn = mariadb.connect(
-            user="root",
-            password="Unique2213",
-            host="localhost",
-            port=3306,
-            database=schema
-        )
+        db_object = DbConnect(schema)
         for i in index_list:
-            if search.table(index=i, schema="analize") is False:
+            if Search.table(index=i, schema="analize") is False:
                 try:
                     name = "nmd" + str(i)
-                    cur = conn.cursor()
-                    cur.execute("CREATE TABLE IF NOT EXISTS %s ("
-                                "dEven varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
-                                "percentage varchar(20) NOT NULL,"
-                                "ghodrat_kh_ha varchar(20) NOT NULL,"
-                                "ghodrat_fo_ha varchar(20) NOT NULL,"
-                                "ghodrat_kh_ho varchar(20) NOT NULL,"
-                                "ghodrat_fo_ho varchar(20) NOT NULL,"
-                                "ghodrat_khha_khho varchar(20) NOT NULL,"
-                                "ghodrat_hjmkhha_hjmkhho varchar(20) NOT NULL,"
-                                "ghodrat_foha_foho varchar(20) NOT NULL,"
-                                "ghodrat_hjmfoha_hjmfoho varchar(20) NOT NULL"
-                                ")"
-                                % (name))
-                    conn.commit()
-                    pass
+                    script = ("CREATE TABLE IF NOT EXISTS %s ("
+                              "dEven varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
+                              "percentage varchar(20) NOT NULL,"
+                              "ghodrat_kh_ha varchar(20) NOT NULL,"
+                              "ghodrat_fo_ha varchar(20) NOT NULL,"
+                              "ghodrat_kh_ho varchar(20) NOT NULL,"
+                              "ghodrat_fo_ho varchar(20) NOT NULL,"
+                              "ghodrat_khha_khho varchar(20) NOT NULL,"
+                              "ghodrat_hjmkhha_hjmkhho varchar(20) NOT NULL,"
+                              "ghodrat_foha_foho varchar(20) NOT NULL,"
+                              "ghodrat_hjmfoha_hjmfoho varchar(20) NOT NULL"
+                              ")"
+                              % name)
+                    db_object.execute(script)
                 except:
-                    log.error_write(i)
+                    Log.error_write(i)
                     continue
-                pass
             else:
                 # badan bayad gozine debug ezafe beshe
                 continue
-                pass
-            pass
-        conn.close()
         return True
-        pass
 
 
 class LiveTableCreate:
+    def __init__(self):
+        pass
+
+    @staticmethod
     def price_table(index=None):
         try:
             # self is symbol's index
             if index is None:
-                index_list = read.index()
+                index_list = Read.index()
                 pass
             else:
                 index_list = [index]
                 pass
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database="live_moneymaker_update"
-            )
+            db_object = DbConnect(ObjProperties.Tse.MoneymakerLive.schema)
             for i in index_list:
-                if search.table(index=i) is False:
+                if Search.table(index=i) is False:
                     try:
                         name = "nmd" + str(i)
-                        cur = conn.cursor()
-                        cur.execute("CREATE TABLE IF NOT EXISTS %s ("
-                                    "finalLastDate varchar(20) NOT NULL,"
-                                    "lastHEven varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
-                                    "buy_CountI varchar(20) NOT NULL,"
-                                    "buy_I_Volume varchar(20) NOT NULL,"
-                                    "sell_CountI varchar(20) NOT NULL,"
-                                    "sell_I_Volume varchar(20) NOT NULL,"
-                                    "buy_CountN varchar(20) NOT NULL,"
-                                    "buy_N_Volume varchar(20) NOT NULL,"
-                                    "sell_CountN varchar(20) NOT NULL,"
-                                    "priceYesterday varchar(20) NOT NULL,"
-                                    "priceFirst varchar(20) NOT NULL,"
-                                    "sell_I_Value varchar(20) NOT NULL,"
-                                    "sell_N_Value varchar(20) NOT NULL,"
-                                    "priceChange varchar(20) NOT NULL,"
-                                    "priceMin varchar(20) NOT NULL,"
-                                    "priceMax varchar(20) NOT NULL,"
-                                    "pClosing varchar(20) NOT NULL,"
-                                    "pDrCotVal varchar(20) NOT NULL,"
-                                    "zTotTran varchar(20) NOT NULL,"
-                                    "qTotTran5J varchar(20) NOT NULL,"
-                                    "qTotCap varchar(20) NOT NULL"
-                                    ")"
-                                    % (name))
-                        conn.commit()
-                        pass
+                        script = ("CREATE TABLE IF NOT EXISTS %s ("
+                                  "finalLastDate varchar(20) NOT NULL,"
+                                  "lastHEven varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
+                                  "buy_CountI varchar(20) NOT NULL,"
+                                  "buy_I_Volume varchar(20) NOT NULL,"
+                                  "sell_CountI varchar(20) NOT NULL,"
+                                  "sell_I_Volume varchar(20) NOT NULL,"
+                                  "buy_CountN varchar(20) NOT NULL,"
+                                  "buy_N_Volume varchar(20) NOT NULL,"
+                                  "sell_CountN varchar(20) NOT NULL,"
+                                  "priceYesterday varchar(20) NOT NULL,"
+                                  "priceFirst varchar(20) NOT NULL,"
+                                  "sell_I_Value varchar(20) NOT NULL,"
+                                  "sell_N_Value varchar(20) NOT NULL,"
+                                  "priceChange varchar(20) NOT NULL,"
+                                  "priceMin varchar(20) NOT NULL,"
+                                  "priceMax varchar(20) NOT NULL,"
+                                  "pClosing varchar(20) NOT NULL,"
+                                  "pDrCotVal varchar(20) NOT NULL,"
+                                  "zTotTran varchar(20) NOT NULL,"
+                                  "qTotTran5J varchar(20) NOT NULL,"
+                                  "qTotCap varchar(20) NOT NULL"
+                                  ")"
+                                  % name)
+                        db_object.execute(script)
                     except:
-                        log.error_write(i)
-                    pass
+                        Log.error_write(i)
                 else:
                     #badan bayad gozine debug ezafe beshe
                     continue
-                    pass
-                pass
-            conn.close()
             return True
         except:
-            log.error_write('')
+            Log.error_write('')
             return False
 
     def analize_table(index=None):
         try:
-            HistoryTableCreate.analize_table(index=index, schema='live_analyze_update')
+            HistoryTableCreate.analyze_table(index=index, schema='live_analyze_update')
             return True
         except:
-            log.error_write('')
+            Log.error_write('')
             return False
 
 
-class log:
+class Log:
+    def __init__(self):
+        pass
+
+    @staticmethod
     def error_write(index, **kwargs):
         # declaring variables
         exc = ['0', '0', '0', '0', '0']
@@ -1117,7 +874,7 @@ class log:
         code = trc[3]
         code = re.sub("'", "", code)
         dic = [{
-            'insCode': index,
+            'symbol': index,
             'module': trc[0],
             'function': trc[2],
             'line': int(trc[1]),
@@ -1127,8 +884,8 @@ class log:
         try:
             save_df = pd.DataFrame.from_dict(dic)
             engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                   "/log_database")
-            counter = save_df.to_sql(name='error_log', con=engine,
+                                   "/manager")
+            counter = save_df.to_sql(name='tbllog', con=engine,
                                      if_exists='append', index=False)
             pass
         except:
@@ -1139,13 +896,14 @@ class log:
                 fallback = 1
                 pass
             elif fallback < 3:
-                log.error_write(index, fallback=1)
+                Log.error_write(index, fallback=1)
                 fallback += 1
                 pass
             else:
                 return None
 
-    def list(self):
+    @staticmethod
+    def list(index):
         error_count = 0
         error_message = ""
         while error_count < 6:
@@ -1159,7 +917,7 @@ class log:
                 )
                 cur = conn.cursor()
                 result = cur.execute((r"SELECT dEven FROM '%s' ORDER BY date DESC"
-                                      % (self)).replace("'", ""))
+                                      % index).replace("'", ""))
                 result = result.fetchall()
                 if result is None:
                     return False
@@ -1176,11 +934,11 @@ class log:
             except:
                 error_count += 1
                 sleep(random.random())
-                log.error_write(self)
+                Log.error_write(index)
                 pass
             pass
         if error_count > 6:
-            log.error_write(self)
+            Log.error_write(index)
             return None
             pass
         else:
@@ -1219,95 +977,58 @@ def search_table(tbl_name, obj=None, schema=None):
         pass
     try:
         # baz kardane sql va khandane tblnamadhatemp
-        conn = mariadb.connect(
-            user="root",
-            password="Unique2213",
-            host="localhost",
-            port=3306,
-            database=schema
-        )
-        cur = conn.cursor()
-        cur.execute(("SHOW TABLES FROM %s LIKE '%s'"
-                     % (schema,
-                        tbl_name)))
-        conn.commit()
-        conn.close()
-        del conn
+        db_object = DbConnect(schema)
+        script = ("SHOW TABLES FROM %s LIKE '%s'"
+                  % (schema,
+                     tbl_name))
+        cur = db_object.select(script)
         if cur.fetchone() is None:
             return False
         else:
             return True
     except:
-        try:
-            conn.commit()
-            conn.close()
-            del conn
-            pass
-        except:
-            pass
-        log.error_write(search.index(tbl_name))
+        Log.error_write(Search.index(tbl_name))
         return None
 
 
-class black_list:
+class BlackList:
+    def __init__(self):
+        pass
 
     @staticmethod
     def read():
         try:
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database="manager"
-            )
-            cur = conn.cursor()
-            cur.execute(r"SELECT insCode FROM tblblacklist")
-            conn.commit()
-            conn.close()
-            del conn
+            db_object = DbConnect(database="manager")
+            cur = db_object.select("SELECT insCode FROM tblblacklist")
             black_list: list = []
             for i in cur:
                 black_list.append(i[0])
                 pass
             return black_list
         except:
-            log.error_write("")
-            return None
+            Log.error_write("")
+            return []
 
-    def search(self):
+    @staticmethod
+    def search(namad_index):
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            conn = mariadb.connect(
-                user="root",
-                password="Unique2213",
-                host="localhost",
-                port=3306,
-                database="manager"
-            )
-            cur = conn.cursor()
-            cur.execute(("SELECT insCode FROM tblblacklist WHERE insCode LIKE %s"
-                         % (self)))
-            conn.commit()
-            conn.close()
-            del conn
+            schema = ObjProperties.Tse.TblBlacklist.schema
+            db_object = DbConnect(schema)
+            script = ("SELECT insCode FROM tblblacklist WHERE insCode LIKE %s"
+                      % namad_index)
+            cur = db_object.select(script)
             if cur.fetchone() is None:
                 return False
                 pass
             else:
                 return True
         except:
-            try:
-                conn.commit()
-                conn.close()
-                del conn
-                pass
-            except:
-                pass
-            log.error_write(search.index(self))
+            Log.error_write(Search.index(namad_index))
             return True
         pass
 
+    @staticmethod
     def write(pd_dataframe: pandas.DataFrame):
         try:
             index = pd_dataframe.loc[0, 'insCode']
@@ -1320,28 +1041,88 @@ class black_list:
             # return saved entries
             return result
         except:
-            log.error_write(index)
+            Log.error_write(index)
             return None
         pass
 
 
-def duplicate_remover(namad_entry):
-    conn = mariadb.connect(
-        user="root",
-        password="Unique2213",
-        host="localhost",
-        port=3306,
-        database="moneymaker"
-    )
-    cur = conn.cursor()
-    cur.execute((r"DROP TABLE IF EXISTS '%s'"
-                 % (namad_entry)).replace("'", ""))
-    conn.commit()
-    conn.close()
-    return None
+class DbConnect:
+    def __init__(self,
+                 database,
+                 user="root",
+                 password="Unique2213",
+                 host="localhost",
+                 port=3306,
+                 ):
+        self.database = database
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+        pass
+
+    def select(self, script):
+        try:
+            conn = mariadb.connect(
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port,
+                database=self.database
+            )
+            cur = conn.cursor()
+            cur.execute(script)
+            conn.commit()
+            conn.close()
+            return cur
+        except:
+            try:
+                conn.commit()
+                conn.close()
+                del conn
+                pass
+            except:
+                pass
+            new = str(sys.exc_info()[1])
+            if "doesn't exist" in new:
+                pass
+            else:
+                pass
+            Log.error_write('')
+            return []
+
+    def execute(self, script):
+        try:
+            conn = mariadb.connect(
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port,
+                database=self.database
+            )
+            cur = conn.cursor()
+            cur.execute(script)
+            conn.commit()
+            conn.close()
+            return True
+        except:
+            try:
+                conn.commit()
+                conn.close()
+                del conn
+                pass
+            except:
+                pass
+            new = str(sys.exc_info()[1])
+            if "doesn't exist" in new:
+                pass
+            else:
+                pass
+            Log.error_write('')
+            return False
 
 
-def SessionKiller():
+def session_killer():
     try:
         # baz kardane sql va khandane tblnamadha
         conn = mariadb.connect(
@@ -1362,8 +1143,7 @@ def SessionKiller():
             pass
         except:
             pass
-        print(sys.exc_info)
-        log.error_write("")
+        Log.error_write("")
         return False
 
 
@@ -1372,7 +1152,7 @@ def SessionKiller():
     database_length():"""
 
 
-class locator():
+class Locator:
 
     @staticmethod
     def database():
@@ -1383,9 +1163,7 @@ class locator():
         return r'C:\Moneymaker2.0\database\temp.db'
 
 
-# def sqlLocator():
-
-class schemas:
+class Schemas:
     def __init__(self):
         pass
 

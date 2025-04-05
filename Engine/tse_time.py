@@ -23,7 +23,7 @@ def datetime_type_check(obj):
         else:
             return False
     except:
-        my_sql.log.error_write('')
+        my_sql.Log.error_write('')
         return False
 
 def current_time_str():

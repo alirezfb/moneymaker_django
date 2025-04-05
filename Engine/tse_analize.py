@@ -78,7 +78,7 @@ def list_calculate_pd_2(index, pd_dataframe: pd.DataFrame, live: bool):
         pd_dataframe = pd.concat([pd_dataframe, temp_df], axis=1)"""
         return temp_df
     except:
-        my_sql.log.error_write(index)
+        my_sql.Log.error_write(index)
         return None
 
 
@@ -135,7 +135,7 @@ class filter:
             moneymaker_df.reset_index(inplace=True, drop=True)
             return analize_df, moneymaker_df
         except:
-            my_sql.log.error_write(index)
+            my_sql.Log.error_write(index)
 
     """def before_negative(index, analize_df, moneymaker_df):
         try:
@@ -164,7 +164,7 @@ class filter:
     def counter(index, pd_dataframe):
         # counter dic
         dic: dict = {
-            "name": my_sql.search.names(index),
+            "name": my_sql.Search.names(index),
             "index": str(index),
             "percentage": 0,
             "ghodrat_kh_ha": 0,
@@ -213,7 +213,7 @@ class filter:
             # resseting dataframe index
             return dic
         except:
-            my_sql.log.error_write(index)
+            my_sql.Log.error_write(index)
             return dic
 
 
@@ -407,7 +407,7 @@ def dataframe_return_old(index_list, definition: str = "last_5_best_limit", rena
                 res = (pd.DataFrame(temp_res.sum())).T
                 if rename is True:
                     res['index'] = str(index)
-                    res['name'] = my_sql.search.names(index)
+                    res['name'] = my_sql.Search.names(index)
                 else:
                     pass
                 result_list.append(res)
@@ -428,7 +428,7 @@ def dataframe_return_old(index_list, definition: str = "last_5_best_limit", rena
             pass
         return return_df
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return None
 
 
@@ -446,7 +446,7 @@ def sum_best_limit(object_list: list):
             pass
         return return_list
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return None
 
 
@@ -456,11 +456,11 @@ def django_best_limits_all(live=True):
             script = "select * from bulk_live_best"
         else:
             script = "select * from bulk_close_best"
-        res = my_sql.search.script(my_sql.obj_properties.tse.bulk_some_close_best_limits.schema,
+        res = my_sql.Search.script(my_sql.ObjProperties.Tse.BulkSomeCloseBestLimits.schema,
                                    script, df_return=True)
         return res
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return None
 
 
@@ -477,7 +477,7 @@ def list_return(index_list, definition):
                 pass
         return result_list
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return None
 
 
@@ -488,7 +488,7 @@ def record_status_return(index, definition):
         res = getattr(obj, definition)()
         return res
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return False
 
 
@@ -498,12 +498,12 @@ def dataframe_return(index, definition, rename_sum=False):
         func = "scripts." + definition + "()"
         res = getattr(obj, definition)()
         if rename_sum is True:
-            res['name'] = my_sql.search.names(index)
+            res['name'] = my_sql.Search.names(index)
         else:
             pass
         return res
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return False
 
 
@@ -517,7 +517,7 @@ def close_market_list(index_list):
             res = getattr(obj, definition)()
         return result_list
     except:
-        my_sql.log.error_write("")
+        my_sql.Log.error_write("")
         return None
 
 
@@ -550,7 +550,7 @@ class scripts:
         self.closing_objects = ""
         self.day = tse_time.today_str(history=False)
         self.time = tse_time.current_time_str()[:3]
-        self.schema = my_sql.schemas()
+        self.schema = my_sql.Schemas()
         self.only_status = only_status
         self.index_list = index_list
         self.df_return = df_return
@@ -642,7 +642,7 @@ class scripts:
 
     def __return_process(self, schema, script):
         try:
-            return_object = my_sql.search.script(schema=schema, script=script, df_return=self.df_return, tbl_name=self.name)
+            return_object = my_sql.Search.script(schema=schema, script=script, df_return=self.df_return, tbl_name=self.name)
             if self.only_status is True:
                 kk = scripts.objects  # when dataframe
                 if self.df_return is True:
@@ -658,7 +658,7 @@ class scripts:
             else:
                 return return_object
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def latest_ghodrat_kh_ha(self):
@@ -673,7 +673,7 @@ class scripts:
                       self.objects.limit_script(1)
             return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def latest_best_limit(self):
@@ -684,7 +684,7 @@ class scripts:
                      self.objects.limit_script(1)
             return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def sum_live_best_limit(self):
@@ -695,7 +695,7 @@ class scripts:
                      self.objects.limit_script(1)
             return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def read_sum_live_best_limit(self):
@@ -705,7 +705,7 @@ class scripts:
                      self.objects.where_script("'Hajm Kharid' > 'Hajm Foroosh'")
             return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     """def latest_best_limit(self):
@@ -729,14 +729,14 @@ class scripts:
             else:
                 return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def sum_close_best_limits_generate(self):
         try:
             return scripts.sum_live_best_limits_generate(self, live=False)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def latest_ha_be_ho(self):
@@ -751,7 +751,7 @@ class scripts:
                      self.objects.limit_script(1)
             return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def last_5_best_limit(self):
@@ -761,7 +761,7 @@ class scripts:
                      self.objects.where_script(self.objects.interval_between("datetime", 3, "HOUR"))
             return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def all_close_best_limit(self):
@@ -771,7 +771,7 @@ class scripts:
                      self.objects.limit_script(5)
             return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def close_best_limit(self):
@@ -783,7 +783,7 @@ class scripts:
                      self.objects.limit_script(5)
             return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def sum_close_best_limit_read(self):
@@ -792,9 +792,9 @@ class scripts:
                      self.objects.from_script(name=self.name) +\
                      self.objects.limit_script(1)
             return scripts.__return_process(self,
-                                            my_sql.obj_properties.tse.sum_close_best_limits.schema, script=script)
+                                            my_sql.ObjProperties.Tse.SumCloseBestLimits.schema, script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def close_ghodrat_kh_ha(self):
@@ -806,7 +806,7 @@ class scripts:
                                                self.objects.last_open_day("dEven"))
             return scripts.__return_process(self, self.schema.history_analyze(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None
 
     def close_ha_be_ho(self):
@@ -819,5 +819,5 @@ class scripts:
                      self.objects.limit_script(1)
             return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
         except:
-            my_sql.log.error_write(self.index)
+            my_sql.Log.error_write(self.index)
             return None

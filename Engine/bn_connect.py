@@ -63,7 +63,7 @@ class binance_connect:
                     sleep(random.random())
                 else:
                     # error handling
-                    my_sql.log.error_write(self.symbol)
+                    my_sql.Log.error_write(self.symbol)
                     return None
 
     def chart_data(self, interval, limit_num=100):
@@ -82,7 +82,7 @@ class binance_connect:
             return df
         except:
             # error handling
-            my_sql.log.error_write(self.symbol)
+            my_sql.Log.error_write(self.symbol)
             return None
 
     def __numeric_convert(self, df):
@@ -95,7 +95,7 @@ class binance_connect:
             df['second_sym_vol'] = pd.to_numeric(df['second_sym_vol'], downcast='integer', errors='coerce')
             return df
         except:
-            my_sql.log.error_write(self.symbol)
+            my_sql.Log.error_write(self.symbol)
             return None
 
     def __open_time_convert(self, dataframe):
@@ -106,7 +106,7 @@ class binance_connect:
             dataframe.drop('open_time_ms', axis=1, inplace=True)
             return dataframe
         except:
-            my_sql.log.error_write(self.symbol)
+            my_sql.Log.error_write(self.symbol)
             return None
 
 
@@ -116,4 +116,4 @@ b = a.dataframe_chart_date(c)
 temp_list = c.json()
 print(c.json())
 print(b)
-my_sql.write_table(b, "btcusdt", my_sql.obj_properties.crypto.chart_data())
+my_sql.write_table(b, "btcusdt", my_sql.ObjProperties.Crypto.ChartData())
