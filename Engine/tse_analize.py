@@ -456,7 +456,7 @@ def django_best_limits_all(live=True):
             script = "select * from bulk_live_best"
         else:
             script = "select * from bulk_close_best"
-        res = my_sql.Search.script(my_sql.ObjProperties.Tse.BulkSomeCloseBestLimits.schema,
+        res = my_sql.Search.script(my_sql.ObjProperties.Tse.BulkSomeCloseBestLimits,
                                    script, df_return=True)
         return res
     except:
@@ -551,6 +551,7 @@ class scripts:
         self.day = tse_time.today_str(history=False)
         self.time = tse_time.current_time_str()[:3]
         self.schema = my_sql.Schemas()
+        self.objectsproperties = my_sql.ObjProperties()
         self.only_status = only_status
         self.index_list = index_list
         self.df_return = df_return
@@ -640,9 +641,10 @@ class scripts:
             return column_name + " BETWEEN NOW() - INTERVAL " + str(interval) +\
                 self.space_char + unit + " AND NOW()"
 
-    def __return_process(self, schema, script):
+    def __return_process(self, obj, script):
         try:
-            return_object = my_sql.Search.script(schema=schema, script=script, df_return=self.df_return, tbl_name=self.name)
+            return_object = my_sql.Search.script(obj=obj, script=script,
+                                                 df_return=self.df_return, tbl_name=self.name)
             if self.only_status is True:
                 kk = scripts.objects  # when dataframe
                 if self.df_return is True:
@@ -671,7 +673,7 @@ class scripts:
                                                 self.objects.latest_ten_minutes("lastHEven")) +\
                       self.objects.order_by_script("lastHEven") +\
                       self.objects.limit_script(1)
-            return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.MoneymakerLive, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -682,7 +684,7 @@ class scripts:
                      self.objects.from_script(name=self.name) +\
                      self.objects.where_script(self.objects.interval_between("datetime", 3)) +\
                      self.objects.limit_script(1)
-            return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.BestLimitsLive, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -693,7 +695,7 @@ class scripts:
                      self.objects.from_script(name=self.name) +\
                      self.objects.where_script(self.objects.interval_between("datetime", 3)) +\
                      self.objects.limit_script(1)
-            return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.BestLimitsLive, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -703,7 +705,7 @@ class scripts:
             script = self.objects.select_script() +\
                      self.objects.from_script(name="live_best_limits") +\
                      self.objects.where_script("'Hajm Kharid' > 'Hajm Foroosh'")
-            return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.BestLimitsLive, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -725,9 +727,9 @@ class scripts:
                      self.objects.from_script(name=self.name) +\
                      self.objects.limit_script(1)
             if live is True:
-                return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
+                return scripts.__return_process(self, self.objectsproperties.Tse.BestLimitsHistory, script=script)
             else:
-                return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
+                return scripts.__return_process(self, self.objectsproperties.Tse.BestLimitsHistory, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -749,7 +751,7 @@ class scripts:
                                                self.objects.latest_ten_minutes("lastHEven")) +\
                      self.objects.order_by_script("lastHEven") +\
                      self.objects.limit_script(1)
-            return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.MoneymakerLive, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -759,7 +761,7 @@ class scripts:
             script = self.objects.select_script(select_group=self.objects.columns.best_limits(sum_group=True)) +\
                      self.objects.from_script(name=self.name) +\
                      self.objects.where_script(self.objects.interval_between("datetime", 3, "HOUR"))
-            return scripts.__return_process(self, self.schema.live_best_limits(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.BestLimitsLive, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -769,7 +771,7 @@ class scripts:
             script = self.objects.select_script(select_group=self.objects.columns.best_limits()) +\
                      self.objects.from_script(name=self.name) +\
                      self.objects.limit_script(5)
-            return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.BestLimitsHistory, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -781,7 +783,7 @@ class scripts:
                      self.objects.where_script("zOrdMeDem > (zOrdMeOf * 3)",
                                                "qTitMeDem/zOrdMeDem > (qTitMeOf/zOrdMeOf)*2") +\
                      self.objects.limit_script(5)
-            return scripts.__return_process(self, self.schema.close_best_limits(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.BestLimitsHistory, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -792,7 +794,7 @@ class scripts:
                      self.objects.from_script(name=self.name) +\
                      self.objects.limit_script(1)
             return scripts.__return_process(self,
-                                            my_sql.ObjProperties.Tse.SumCloseBestLimits.schema, script=script)
+                                            my_sql.ObjProperties.Tse.SumCloseBestLimits, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -804,7 +806,7 @@ class scripts:
                      self.objects.where_script("ghodrat_kh_ha > (ghodrat_fo_ha * 3)",
                                                "ghodrat_kh_ha > ghodrat_kh_ho",
                                                self.objects.last_open_day("dEven"))
-            return scripts.__return_process(self, self.schema.history_analyze(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.AnalyzeHistory, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None
@@ -817,7 +819,7 @@ class scripts:
                                                self.objects.last_open_day("dEven")) +\
                      self.objects.order_by_script("dEven") +\
                      self.objects.limit_script(1)
-            return scripts.__return_process(self, self.schema.live_moneymaker(), script=script)
+            return scripts.__return_process(self, self.objectsproperties.Tse.MoneymakerLive, script=script)
         except:
             my_sql.Log.error_write(self.index)
             return None

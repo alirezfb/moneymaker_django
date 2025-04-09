@@ -374,7 +374,7 @@ class urls:
         drop_columns_client_types = ['buy_DDD_Volume', 'buy_CountDDD']
 
 
-class database_update:
+class DatabaseUpdate:
     def __init__(self, index: str, live: bool, save_limit: int = 0):
         self.index = index
         self.headers = urls.headers
@@ -399,30 +399,33 @@ class database_update:
                     return None
 
     def fetch_closing_price(self):
-        return database_update.__fetcher(self, self.object.url_closing_price())
+        return DatabaseUpdate.__fetcher(self, self.object.url_closing_price())
 
     def fetch_client_types(self):
-        return database_update.__fetcher(self, self.object.url_client_types())
+        return DatabaseUpdate.__fetcher(self, self.object.url_client_types())
 
     def fetch_best_limits(self):
-        return database_update.__fetcher(self, self.object.url_best_limit())
+        return DatabaseUpdate.__fetcher(self, self.object.url_best_limit())
 
     def dataframe_closing_client(self, closing_response, client_response):
         try:
-            closing_df = database_update.__create_dataframe(self, closing_response, self.object.json_name_closing_price,
-                                                            self.object.drop_columns_closing_price)
-            client_df = database_update.__create_dataframe(self, client_response, self.object.json_name_client_types,
-                                                           self.object.drop_columns_client_types)
+            closing_df = DatabaseUpdate.__create_dataframe(self, closing_response, self.object.json_name_closing_price,
+                                                           self.object.drop_columns_closing_price)
+            client_df = DatabaseUpdate.__create_dataframe(self, client_response, self.object.json_name_client_types,
+                                                          self.object.drop_columns_client_types)
+            # return none if empty
             if closing_df is None or client_df is None:
                 return None
+            # comparing length of dataframes
             else:
-                return_df = pd.DataFrame()
-                if len(closing_df.index) > len(client_df.index):
-                    return_df = pd.concat([closing_df, client_df], axis=1)
-                    loop_length = len(closing_df.index) - 1
-                else:
-                    return_df = pd.concat([client_df, closing_df], axis=1)
-                    loop_length = len(client_df.index) - 1
+                pass
+            return_df = pd.DataFrame()
+            if len(closing_df.index) > len(client_df.index):
+                return_df = pd.concat([closing_df, client_df], axis=1)
+                loop_length = len(closing_df.index) - 1
+            else:
+                return_df = pd.concat([client_df, closing_df], axis=1)
+                loop_length = len(client_df.index) - 1
             return_df.drop(return_df.index[loop_length - 1:return_df.shape[0]], axis=0, inplace=True)
             return return_df
         except:
@@ -430,9 +433,9 @@ class database_update:
             return None
 
     def dataframe_best_limits(self, url_response):
-        return database_update.__create_dataframe(self, url_response,
-                                                  self.object.json_name_best_limits,
-                                                  self.object.drop_columns_best_limits)
+        return DatabaseUpdate.__create_dataframe(self, url_response,
+                                                 self.object.json_name_best_limits,
+                                                 self.object.drop_columns_best_limits)
 
     def __create_dataframe(self, url_response, json_name, drop_columns):
         try:
@@ -465,7 +468,8 @@ def tblnamadha_update():
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                               'Chrome/109.0.0.0 Safari/537.36',
             }, {
-                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                              'Chrome/77.0.3865.90'
                               'Safari/537.36',
             }, {
                 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
@@ -478,49 +482,48 @@ def tblnamadha_update():
             error_count += 1
             if error_count > 4:
                 sleep(random.random())
-                pass
             else:
                 pass
-            pass
-        pass
     if error_count >= 10:
         my_sql.Log.error_write("0")
         return None
-    pass
 
 
-class LiveDatabaseUpdate():
+class LiveDatabaseUpdate:
+    def __init__(self):
+        pass
+
+    @staticmethod
     def closing_prices_pd(index, save_limit):
         error_count = 0
         while error_count <= 4:
             try:
-                url_template = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/"
+                url_template = 'https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/'
                 url_dates = url_template + index
                 headers = [{
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                                   'Chrome/109.0.0.0 Safari/537.36',
                 }, {
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                                  'Chrome/77.0.3865.90'
                                   'Safari/537.36',
                 }, {
-                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 ('
+                                  'KHTML,'
                                   'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
                 }]
-                url_responce = requests.get(url_dates, headers=headers[random.randint(0, 2)])
-                return url_responce
+                url_response = requests.get(url_dates, headers=headers[random.randint(0, 2)])
+                return url_response
             except:
                 error_count += 1
                 if error_count < 4:
                     sleep(random.random())
-                    pass
                 else:
                     # error handling
                     my_sql.Log.error_write(index)
                     return None
-                pass
-            pass
-        pass
 
+    @staticmethod
     def client_types_pd(index, closing_price):
         error_count = 0
         while error_count <= 4:
@@ -531,28 +534,27 @@ class LiveDatabaseUpdate():
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                                   'Chrome/109.0.0.0 Safari/537.36',
                 }, {
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                                  'Chrome/77.0.3865.90'
                                   'Safari/537.36',
                 }, {
-                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 ('
+                                  'KHTML,'
                                   'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
                 }]
-                responce_client_types = requests.get(url_dates, headers=headers[random.randint(0, 2)])
-                return responce_client_types
+                response_client_types = requests.get(url_dates, headers=headers[random.randint(0, 2)])
+                return response_client_types
             except:
                 error_count += 1
                 if error_count < 4:
                     sleep(random.random())
-                    pass
                 else:
                     # error handling
                     my_sql.Log.error_write(index)
                     return None
-                pass
-            pass
-        # error handling
         return None
 
+    @staticmethod
     def best_limits_pd(index):
         error_count = 0
         while error_count <= 4:
@@ -563,40 +565,41 @@ class LiveDatabaseUpdate():
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                                   'Chrome/109.0.0.0 Safari/537.36',
                 }, {
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                                  'Chrome/77.0.3865.90'
                                   'Safari/537.36',
                 }, {
-                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 ('
+                                  'KHTML,'
                                   'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
                 }]
-                responce_best_limits = requests.get(url_dates, headers=headers[random.randint(0, 2)])
-                return responce_best_limits
+                response_best_limits = requests.get(url_dates, headers=headers[random.randint(0, 2)])
+                return response_best_limits
             except:
                 error_count += 1
                 if error_count < 4:
                     sleep(random.random())
-                    pass
                 else:
                     # error handling
                     my_sql.Log.error_write(index)
                     return None
-                pass
-            pass
         # error handling
         return None
 
-    def dataframe_create(client_responce, closing_responce, index):
+    @staticmethod
+    def dataframe_create(client_response, closing_response, index):
         try:
-            closing_df = LiveDatabaseUpdate.closing_price_df(index, closing_responce)
-            client_df = LiveDatabaseUpdate.client_types_df(index, closing_df, client_responce)
+            closing_df = LiveDatabaseUpdate.closing_price_df(index, closing_response)
+            client_df = LiveDatabaseUpdate.client_types_df(index, closing_df, client_response)
             del closing_df
             return client_df
         except:
             my_sql.Log.error_write(index)
 
-    def closing_price_df(index, url_responce):
+    @staticmethod
+    def closing_price_df(index, url_response):
         try:
-            dataframe = pd.json_normalize(url_responce.json()['closingPriceInfo'])
+            dataframe = pd.json_normalize(url_response.json()['closingPriceInfo'])
             try:
                 dataframe.drop(['instrument', 'nvt', 'mop', 'pRedTran', 'dEven', 'hEven',
                                 'thirtyDayClosingHistory', 'priceChange', 'last', 'id',
@@ -614,9 +617,10 @@ class LiveDatabaseUpdate():
             my_sql.Log.error_write(index)
             return None
 
-    def client_types_df(index, dataframe, url_responce):
+    @staticmethod
+    def client_types_df(index, dataframe, url_response):
         try:
-            temp_dataframe = pd.json_normalize(url_responce.json()['clientType'])
+            temp_dataframe = pd.json_normalize(url_response.json()['clientType'])
             try:
                 temp_dataframe.drop(['buy_DDD_Volume', 'buy_CountDDD'], axis=1, inplace=True)
             except:
@@ -628,9 +632,10 @@ class LiveDatabaseUpdate():
             my_sql.Log.error_write(index)
             return None
 
-    def best_limits_df(index, url_responce):
+    @staticmethod
+    def best_limits_df(index, url_response):
         try:
-            dataframe = pd.json_normalize(url_responce.json()['bestLimits'])
+            dataframe = pd.json_normalize(url_response.json()['bestLimits'])
             try:
                 dataframe.drop(['insCode'], axis=1, inplace=True)
             except:
@@ -651,26 +656,25 @@ class LiveDatabaseUpdate():
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                                   'Chrome/109.0.0.0 Safari/537.36',
                 }, {
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                                  'Chrome/77.0.3865.90'
                                   'Safari/537.36',
                 }, {
-                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 ('
+                                  'KHTML,'
                                   'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
                 }]
-                responce_dates_url = requests.get(url_dates, headers=headers[random.randint(0, 2)])
-                df = pd.json_normalize(responce_dates_url.json()['marketOverview'])
+                response_dates_url = requests.get(url_dates, headers=headers[random.randint(0, 2)])
+                df = pd.json_normalize(response_dates_url.json()['marketOverview'])
                 return df
             except:
                 error_count += 1
                 if error_count < 4:
                     sleep(random.random())
-                    pass
                 else:
                     # error handling
                     my_sql.Log.error_write("")
                     return None
-                pass
-            pass
 
 
 def list_int(list):

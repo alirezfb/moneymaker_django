@@ -33,10 +33,16 @@ def multiprocess_function_list(func, loop_list, *args):
 
 
 def live_update(index_list, state_check=True):
+    # start timing
     start_time_t = datetime.now()
-    market_state = extract_save.UrlFetcher.market_overview(only_state=True)
-    if state_check is True and market_state is False:
-        return 'Market Closed'
+    # if market state hasn't been checked
+    if state_check is True:
+        # checking again if market is open
+        market_state = extract_save.UrlFetcher.market_overview(only_state=True)
+        if market_state is False:
+            return 'Market Closed'
+        else:
+            pass
     else:
         with ThreadPoolExecutor(max_workers=8) as exc0:
             response_list = exc0.map(tse_test.live_fetcher__, index_list)
@@ -73,15 +79,19 @@ def infinity_run():
         endless = True
         # reading index list
         index_list = my_sql.Read.index(bl_check=True)
+        index_list = ['46348559193224090']
         print(index_list)
-        #index_list = ['46348559193224090']
         #index_list = index_list[:30]
-        # updating last open day and today
+        # updating last open day and latest day this program had run
         extract_save.market_status()
+        print('1')
         while endless is True:
             # my_sql.LiveTableCreate.price_table()
+            # checking if market is open
             market_state = extract_save.UrlFetcher.market_overview(only_state=True)
+            #if market is open
             while market_state is True:
+                # initiate live update for main and analyze table
                 live_update(index_list, state_check=True)
                 print('fff')
                 # live_best_limits = tse_analize.dataframe_return_old(index_list, "sum_live_best_limit")

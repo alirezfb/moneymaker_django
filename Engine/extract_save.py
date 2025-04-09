@@ -82,16 +82,13 @@ class UrlFetcher:
             if live is True:
                 client_types_list = tse_connect.LiveDatabaseUpdate.client_types_pd(index=index,
                                                                                    closing_price=closing_price_df)
-                pass
             else:
                 client_types_list = tse_connect.HistoryDatabaseUpdate.client_types_pd(index=index,
                                                                                       closing_price=closing_price_df)
-                pass
             return client_types_list
         except:
             my_sql.Log.error_write(index)
             return None
-        pass
 
     @staticmethod
     def best_limits_fetch(index):
@@ -116,15 +113,9 @@ class UrlFetcher:
                     return False
                 else:
                     return True
-                pass
-
-            pass
         except:
             my_sql.Log.error_write("")
             return None
-        pass
-
-    pass
 
 
 def market_status():

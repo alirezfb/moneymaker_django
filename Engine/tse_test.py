@@ -23,7 +23,8 @@ import extract_save
 
 def live_fetcher__(index):
     try:
-        live_object = tse_connect.database_update(index, live=True)
+        # creating database update class instance
+        live_object = tse_connect.DatabaseUpdate(index, live=True)
         # fetching price list from url and saving them
         closing_price_response = live_object.fetch_closing_price()
         # timeout error
@@ -58,7 +59,7 @@ def history_fetcher__(index):
             print('skip')
             return None
         else:
-            history_object = tse_connect.database_update(index, live=False)
+            history_object = tse_connect.DatabaseUpdate(index, live=False)
             # fetching price list from url and saving them
             closing_price_response = history_object.fetch_closing_price()
             # timeout error
@@ -86,7 +87,7 @@ def history_write__(response_list, index):
             best_limit_obj = my_sql.ObjProperties.Tse.BestLimitsHistory
             analyze_obj = my_sql.ObjProperties.Tse.AnalyzeHistory
             sum_best_obj = my_sql.ObjProperties.Tse.SumCloseBestLimits
-            history_object = tse_connect.database_update(index, live=False, save_limit=800)
+            history_object = tse_connect.DatabaseUpdate(index, live=False, save_limit=800)
             # getting saved dates of an index in main database
             main_date_list = my_sql.search_dates(tbl_name, moneymaker_obj)
             # getting saved dates of an index in analize database
@@ -128,26 +129,30 @@ def history_write__(response_list, index):
 def live_write__(response_list, index):
     try:
         tbl_name = "nmd" + index
-        moneymaker_obj = my_sql.ObjProperties.Tse.MoneymakerLive
-        best_limits_obj = my_sql.ObjProperties.Tse.BestLimitsLive
-        sum_best_limits_obj = my_sql.ObjProperties.Tse.SumLiveBestLimits
+        # extracting responses
         client_response, closing_response, best_limits_response = response_list
-        live_object = tse_connect.database_update(index, live=True)
         if client_response is None or closing_response is None:
             return None
         else:
-            pd_dataframe = live_object.dataframe_closing_client(closing_response, client_response)
-            best_limits_dataframe = live_object.dataframe_best_limits(best_limits_response)
-            script_obj = tse_analize.scripts(index=index, only_status=False, df_return=True)
-            if pd_dataframe is None:
-                return None
-            else:
-                # saving price list and client types in database
-                my_sql.write_table(pd_dataframe, tbl_name, moneymaker_obj)
-                my_sql.write_table(best_limits_dataframe, tbl_name, best_limits_obj)
-                sum_best_limit_df = script_obj.sum_live_best_limits_generate()
-                my_sql.write_table(sum_best_limit_df, tbl_name, sum_best_limits_obj, truncate=True)
-                del pd_dataframe, best_limits_dataframe
+            pass
+        # creating object instances
+        moneymaker_obj = my_sql.ObjProperties.Tse.MoneymakerLive
+        best_limits_obj = my_sql.ObjProperties.Tse.BestLimitsLive
+        sum_best_limits_obj = my_sql.ObjProperties.Tse.SumLiveBestLimits
+        # creating database class instance
+        live_object = tse_connect.DatabaseUpdate(index, live=True)
+        pd_dataframe = live_object.dataframe_closing_client(closing_response, client_response)
+        if pd_dataframe is None:
+            return None
+        else:
+            pass
+        best_limits_dataframe = live_object.dataframe_best_limits(best_limits_response)
+        script_obj = tse_analize.scripts(index=index, only_status=False, df_return=True)
+        # saving price list and client types in database
+        my_sql.write_table(pd_dataframe, tbl_name, moneymaker_obj)
+        my_sql.write_table(best_limits_dataframe, tbl_name, best_limits_obj)
+        sum_best_limit_df = script_obj.sum_live_best_limits_generate()
+        my_sql.write_table(sum_best_limit_df, tbl_name, sum_best_limits_obj, truncate=True)
         return True
     except:
         my_sql.Log.error_write(index)

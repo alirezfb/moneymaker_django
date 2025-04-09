@@ -225,7 +225,10 @@ class ObjProperties:
             def __init__(self):
                 pass
 
+            fa_charset = False
             schema = "manager"
+            table_create_columns = ("insCode varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
+                                    "status varchar(20) NULL")
 
 
 def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, save_limit=10000):
@@ -237,15 +240,14 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, s
                 pass
             # making a copy to protect form changes
             clone_dataframe = dataframe.copy(deep=False)
-
             # extract schema and datefield name from object
             schema = obj.schema
             date_field = obj.date_field
             # checking if the table exists and create it if not
-            create_table(obj, tbl_name)
+            create_table(obj=obj, tbl_name=tbl_name)
             # truncate table if needed
             if truncate is True:
-                truncate_table(schema, tbl_name)
+                truncate_table(tbl_name, obj)
                 last_saved_date = 0
             # getting last saved dates if truncate isn't used
             elif existing_dates is None:
@@ -321,42 +323,58 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, s
             return 0
 
 
+def repair_check(exception_string, obj, tbl_name):
+    try:
+        # table doesn't exist
+        schema = obj.schema
+        result1, result2 = False, False
+        exception_string = str(exception_string)
+        if "doesn't exist" in exception_string and "Table" in exception_string:
+            print(8)
+            result1 = create_table(obj, tbl_name=tbl_name)
+        elif "Unknown database" in exception_string:
+            print(9)
+            result2 = create_db(obj)
+        else:
+            pass
+        if result1 is True or result2 is True:
+            return True
+        else:
+            return False
+    except:
+        Log.error_write(tbl_name)
+
+
 def read_table(tbl_name, obj, column_name=None, list_return=True):
     try:
         # baz kardane sql va khandane tblnamadhatemp
-        db_object = DbConnect(obj.schema)
+        db_object = DbConnect(obj)
         if column_name is not None:
-            cur = db_object.select(r"SELECT %s FROM %s "
-                                   % (column_name, tbl_name))
+            script = (r"SELECT %s FROM %s "
+                      % (column_name, tbl_name))
         else:
-            cur = db_object.select(r"SELECT * FROM %s "
-                                   % tbl_name)
+            script = (r"SELECT * FROM %s "
+                      % tbl_name)
             pass
+        cur = db_object.select(script, tbl_name)
         if list_return is True:
-            return_object = cur.fetchall()
-            if len(return_object) < 1:
-                return None
-            else:
-                return list(return_object[0])
+            return_object = db_object.fetchall(cur, cur_return=False)
         else:
-            return_object = cur.fetchone()
-            if return_object is None:
-                return None
-            else:
-                return return_object[0]
+            return_object = db_object.fetchone(cur, cur_return=False)
+        return return_object
     except:
         Log.error_write("")
 
 
-def truncate_table(schema, tbl_name):
+def truncate_table(tbl_name, obj):
     try:
-        if search_table(tbl_name, schema=schema) is False:
+        if search_table(tbl_name, obj) is False:
             return None
         else:
             script = "truncate table " + tbl_name
             # baz kardane sql va khandane tblnamadhatemp
-            db_object = DbConnect(schema)
-            db_object.execute(script)
+            db_object = DbConnect(obj)
+            db_object.execute(script, tbl_name)
             return True
     except:
         Log.error_write(Search.index(''))
@@ -366,33 +384,30 @@ def truncate_table(schema, tbl_name):
 def search_dates(tbl_name, obj, list_return=True):
     try:
         date_field = obj.date_field
-        schema = obj.schema
         if date_field == '':
             return [0]
         else:
             pass
         # baz kardane sql va khandane tblnamadhatemp
-        db_object = DbConnect(schema)
-        cur = db_object.select("SELECT %s FROM %s ORDER BY %s DESC"
-                               % (date_field, tbl_name, date_field))
+        db_object = DbConnect(obj)
+        script = ("SELECT %s FROM %s ORDER BY %s DESC"
+                  % (date_field, tbl_name, date_field))
+        cur = db_object.select(script, tbl_name)
         if list_return is True:
-            temp_list = cur.fetchall()
-            with [] as return_list:
-                for i in range(0, len(temp_list)):
-                    if tse_time.datetime_type_check(temp_list[i][0]) is True:
-                        return_list.append(tse_time.int_db_form(temp_list[i][0]))
-                    else:
-                        return_list.append(int(temp_list[i][0]))
-                if len(return_list) < 1:
-                    return [0]
+            temp_list = db_object.fetchall(cur, cur_return=True)
+            return_list = []
+            for i in range(0, len(temp_list)):
+                if tse_time.datetime_type_check(temp_list[i][0]) is True:
+                    return_list.append(tse_time.int_db_form(temp_list[i][0]))
                 else:
-                    return return_list
-        else:
-            temp_list = cur.fetchone()
-            if temp_list is None:
+                    return_list.append(int(temp_list[i][0]))
+            if len(return_list) < 1:
                 return [0]
             else:
-                return temp_list[0]
+                return return_list
+        else:
+            return_list = db_object.fetchone(cur, cur_return=False)
+            return return_list
     except:
         Log.error_write("")
         return [0]
@@ -413,8 +428,10 @@ class Read:
         while error_count < 3:
             try:
                 # baz kardane sql va khandane tblnamadha
-                db_object = DbConnect("manager")
-                cur = db_object.select(r"SELECT name FROM tblnamadha")
+                obj = ObjProperties.Tse.TblNamadha
+                db_object = DbConnect(obj)
+                script = "SELECT name FROM tblnamadha"
+                cur = db_object.select(script)
                 # loop baraye estekhraj kardane esme namadha
                 namadha = []
                 for i in cur:
@@ -434,8 +451,8 @@ class Read:
         try:
             # baz kardane sql va khandane tblnamadhatemp
             script = "SELECT namad_index FROM tblnamadha"
-            schema = ObjProperties.Tse.TblNamadha.schema
-            db_object = DbConnect(schema)
+            obj = ObjProperties.Tse.TblNamadha
+            db_object = DbConnect(obj)
             cur = db_object.select(script)
             if bl_check is True:
                 blacklist = BlackList.read()
@@ -483,15 +500,27 @@ class Read:
             return None
 
 
+def index_extract(variable):
+    try:
+        if isinstance(variable, str) is True and 'nmd' in variable:
+            variable = variable.replace('nmd', '')
+            return int(variable)
+        else:
+            return
+    except:
+        Log.error_write(variable)
+
+
 class Search:
     def __init__(self):
         pass
 
     @staticmethod
-    def script(schema: str, script: str, df_return=True, tbl_name=None):
+    def script(obj, script: str, df_return=True, tbl_name=None):
         try:
+            schema = obj.schema
             if tbl_name is not None:
-                if search_table(tbl_name, schema=schema) is False:
+                if search_table(tbl_name, obj) is False:
                     return None
                 else:
                     pass
@@ -506,12 +535,9 @@ class Search:
                 pass
             else:
                 # baz kardane sql va khandane tblnamadhatemp
-                db_object = DbConnect(schema)
-                cur = db_object.select(script)
-                try:
-                    return_object = cur.fetchall()
-                except:
-                    return_object = []
+                db_object = DbConnect(obj)
+                cur = db_object.select(script, tbl_name)
+                return_object = db_object.fetchall(cur, cur_return=True)
             return return_object
         except:
             try:
@@ -528,10 +554,10 @@ class Search:
         pass
 
     @staticmethod
-    def any_table_records(namad_index, table_name, selected_index, schema, searched_item=None, searched_index=None):
+    def any_table_records(namad_index, table_name, selected_index, obj, searched_item=None, searched_index=None):
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            db_object = DbConnect(schema)
+            db_object = DbConnect(obj)
             if searched_index or searched_item is None:
                 script = ("SELECT %s FROM %s"
                           % (selected_index, table_name))
@@ -539,52 +565,40 @@ class Search:
                 script = ("SELECT %s FROM %s WHERE %s LIKE %s"
                           % (selected_index, table_name,
                              searched_index, searched_item))
-            cur = db_object.select(script)
-            temp = cur.fetchall()
-            with [] as result:
-                for i in temp:
-                    result.append(i[0])
-                    pass
+            cur = db_object.select(script, table_name)
+            result = db_object.fetchall(cur, cur_return=False)
             return result
         except:
             Log.error_write(Search.index(namad_index))
             return None
 
     @staticmethod
-    def names(namad_tbl_name):
+    def names(tbl_name):
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            schema = ObjProperties.Tse.TblNamadha.schema
-            db_object = DbConnect(schema)
+            obj = ObjProperties.Tse.TblNamadha.schema
+            db_object = DbConnect(obj)
             script = ("SELECT name FROM tblnamadha WHERE namad_index LIKE %s"
-                      % (namad_tbl_name))
-            cur = db_object.select(script)
-            result = cur.fetchone()[0]
+                      % tbl_name)
+            cur = db_object.select(script, tbl_name)
+            result = db_object.fetchone(cur, cur_return=False)
             return result
         except:
-            Log.error_write(Search.index(namad_tbl_name))
+            Log.error_write(Search.index(tbl_name))
             return None
 
     @staticmethod
-    def table(table_name: str = None, index=None, schema: str = None):
-        if table_name is None:
-            table_name = "nmd" + str(index)
-            pass
-        else:
-            pass
-        if schema is None:
-            schema = "moneymaker"
-            pass
-        else:
-            pass
+    def table(table_name: str, obj):
         try:
+            schema = obj.schema
             # baz kardane sql va khandane tblnamadhatemp
             db_object = DbConnect(schema)
             script = ("SHOW TABLES FROM %s LIKE '%s'"
                       % (schema,
                          table_name))
-            cur = db_object.select(script)
-            if cur.fetchone() is None:
+            cur = db_object.select(script, obj, table_name)
+            result = db_object.fetchone(cur, cur_return=False)
+            if result is None:
                 return False
             else:
                 return True
@@ -593,37 +607,38 @@ class Search:
             return None
 
     @staticmethod
-    def index(namad_tbl_name):
+    def index(namad_index):
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            schema = ObjProperties.Tse.TblNamadha.schema
-            db_object = DbConnect(schema)
-            script = (r"SELECT namad_index FROM tblnamadha WHERE name LIKE '%s'"
-                      % namad_tbl_name)
-            cur = db_object.select(script)
-            result = cur.fetchone()[0]
+            obj = ObjProperties.Tse.TblNamadha
+            db_object = DbConnect(obj)
+            namad_index = index_extract(namad_index)
+            sleep(5)
+            script = (r"SELECT namad_index FROM tblnamadha WHERE namad_index LIKE '%s'"
+                      % namad_index)
+            cur = db_object.select(script, namad_index)
+            result = db_object.fetchone(cur, cur_return=False)
             return result
         except:
-            Log.error_write(namad_tbl_name)
+            Log.error_write(namad_index)
             return None
         pass
 
     @staticmethod
-    def dates(index, tbl_name=None, schema: str = None):
-        if Search.table(index=index) is not True:
+    def dates(index, obj, tbl_name=None):
+        tbl_name = "nmd" + str(index)
+        schema = obj.schema
+        if Search.table(tbl_name, obj) is not True:
             return [0]
-        elif schema is None:
-            schema = "moneymaker"
-            pass
         else:
             pass
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            db_object = DbConnect(schema)
+            db_object = DbConnect(obj)
             script = (r"SELECT dEven FROM  %s "
                       % tbl_name)
-            cur = db_object.select(script)
-            q_result = cur.fetchall()
+            cur = db_object.select(script, tbl_name)
+            q_result = db_object.fetchall(cur, cur_return=False)
             if q_result is None or len(q_result) == 0:
                 return [0]
             else:
@@ -652,7 +667,7 @@ va sakhtane tabali jodagane baraye harkodoom az namad ha
 tarahi shode"""
 
 
-def create_table(obj, tbl_name=None, full_index=False, tse=True):
+def create_table(obj=None, tbl_name=None, full_index=False, tse=True):
     try:
         index_list = []
         # when we want to create a full database for tse
@@ -665,7 +680,7 @@ def create_table(obj, tbl_name=None, full_index=False, tse=True):
         else:
             index_list = [tbl_name]
         # engine
-        db_object = DbConnect(obj.schema)
+        db_object = DbConnect(obj)
         for i in index_list:
             if search_table(tbl_name, obj) is False:
                 try:
@@ -675,7 +690,7 @@ def create_table(obj, tbl_name=None, full_index=False, tse=True):
                         script += "\ncharset = utf8mb4;"
                     else:
                         pass
-                    cur = db_object.select(script)
+                    query_result = db_object.execute(script, tbl_name)
                 except:
                     Log.error_write(i)
                     continue
@@ -685,7 +700,49 @@ def create_table(obj, tbl_name=None, full_index=False, tse=True):
         return True
     except:
         Log.error_write('')
-        return None
+        return False
+
+
+def create_db(obj):
+    try:
+        schema = obj.schema
+        # checking if database doesn't exist
+        if db_existence_check(obj) is False:
+            return False
+        else:
+            pass
+        # engine
+        db_object = DbConnect(obj)
+        script = (r"CREATE DATABASE " %
+                  schema)
+        print('kir')
+        # this return a boolean
+        query_result = db_object.execute(script)
+        return query_result
+    except:
+        Log.error_write('')
+        return False
+
+
+def db_existence_check(obj):
+    try:
+        # engine
+        db_object = DbConnect(obj)
+        script = ("show databases like %s"
+                  % obj.schema)
+        if obj.fa_charset is True:
+            script += "\ncharset = utf8mb4;"
+        else:
+            pass
+        cur = db_object.select(script, info_schema=True)
+        result = db_object.fetchone(cur, cur_return=False)
+        if result is not None:
+            return True
+        else:
+            return False
+    except:
+        Log.error_write('')
+        return False
 
 
 class HistoryTableCreate:
@@ -704,7 +761,8 @@ class HistoryTableCreate:
             schema = ObjProperties.Tse.MoneymakerHistory.schema
             db_object = DbConnect(schema)
             for i in index_list:
-                if Search.table(index=i) is False:
+                tbl_name = "nmd" + str(i)
+                if Search.table(tbl_name) is False:
                     try:
                         name = "nmd" + str(i)
                         script = ("CREATE TABLE IF NOT EXISTS %s ("
@@ -747,7 +805,7 @@ class HistoryTableCreate:
             return None
 
     @staticmethod
-    def analyze_table(index=None, schema: str = None):
+    def analyze_table(index=None, obj=None):
         # self is symbol's index
         if index is None:
             index_list = Read.index()
@@ -755,14 +813,16 @@ class HistoryTableCreate:
         else:
             index_list = [index]
             pass
-        if schema is None:
-            schema = 'analize'
+        if obj is None:
+            obj = ObjProperties.Tse.AnalyzeHistory
             pass
         else:
             pass
-        db_object = DbConnect(schema)
+        schema = obj.schema
+        db_object = DbConnect(obj)
         for i in index_list:
-            if Search.table(index=i, schema="analize") is False:
+            tbl_name = "nmd" + str(i)
+            if Search.table(tbl_name, ObjProperties.Tse.AnalyzeHistory) is False:
                 try:
                     name = "nmd" + str(i)
                     script = ("CREATE TABLE IF NOT EXISTS %s ("
@@ -778,7 +838,7 @@ class HistoryTableCreate:
                               "ghodrat_hjmfoha_hjmfoho varchar(20) NOT NULL"
                               ")"
                               % name)
-                    db_object.execute(script)
+                    db_object.execute(script, name)
                 except:
                     Log.error_write(i)
                     continue
@@ -802,7 +862,8 @@ class LiveTableCreate:
             else:
                 index_list = [index]
                 pass
-            db_object = DbConnect(ObjProperties.Tse.MoneymakerLive.schema)
+            obj = ObjProperties.Tse.MoneymakerLive
+            db_object = DbConnect(obj)
             for i in index_list:
                 if Search.table(index=i) is False:
                     try:
@@ -831,7 +892,7 @@ class LiveTableCreate:
                                   "qTotCap varchar(20) NOT NULL"
                                   ")"
                                   % name)
-                        db_object.execute(script)
+                        db_object.execute(script, name)
                     except:
                         Log.error_write(i)
                 else:
@@ -844,7 +905,7 @@ class LiveTableCreate:
 
     def analize_table(index=None):
         try:
-            HistoryTableCreate.analyze_table(index=index, schema='live_analyze_update')
+            HistoryTableCreate.analyze_table(index=index, obj=ObjProperties.Tse.AnalyzeLive)
             return True
         except:
             Log.error_write('')
@@ -970,19 +1031,17 @@ class Log:
         pass
 
 
-def search_table(tbl_name, obj=None, schema=None):
-    if obj is not None:
-        schema = obj.schema
-    else:
-        pass
+def search_table(tbl_name, obj):
     try:
+        schema = obj.schema
         # baz kardane sql va khandane tblnamadhatemp
-        db_object = DbConnect(schema)
+        db_object = DbConnect(obj)
         script = ("SHOW TABLES FROM %s LIKE '%s'"
                   % (schema,
                      tbl_name))
-        cur = db_object.select(script)
-        if cur.fetchone() is None:
+        cur = db_object.select(script, tbl_name)
+        result = db_object.fetchone(cur, cur_return=False)
+        if result is None:
             return False
         else:
             return True
@@ -995,11 +1054,17 @@ class BlackList:
     def __init__(self):
         pass
 
+    obj = ObjProperties.Tse.TblBlacklist
+    tbl_name = "tblblacklist"
+
     @staticmethod
     def read():
         try:
-            db_object = DbConnect(database="manager")
-            cur = db_object.select("SELECT insCode FROM tblblacklist")
+            obj = BlackList.obj
+            script = ("SELECT insCode FROM %s"
+                      % BlackList.tbl_name)
+            db_object = DbConnect(obj)
+            cur = db_object.select(script, BlackList.tbl_name)
             black_list: list = []
             for i in cur:
                 black_list.append(i[0])
@@ -1013,14 +1078,14 @@ class BlackList:
     def search(namad_index):
         try:
             # baz kardane sql va khandane tblnamadhatemp
-            schema = ObjProperties.Tse.TblBlacklist.schema
-            db_object = DbConnect(schema)
+            obj = ObjProperties.Tse.TblBlacklist
+            db_object = DbConnect(obj)
             script = ("SELECT insCode FROM tblblacklist WHERE insCode LIKE %s"
                       % namad_index)
-            cur = db_object.select(script)
-            if cur.fetchone() is None:
+            cur = db_object.select(script, namad_index)
+            result = db_object.fetchone(cur, cur_return=False)
+            if result is None:
                 return False
-                pass
             else:
                 return True
         except:
@@ -1031,44 +1096,50 @@ class BlackList:
     @staticmethod
     def write(pd_dataframe: pandas.DataFrame):
         try:
-            index = pd_dataframe.loc[0, 'insCode']
-            engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306/manager")
-            result = pd_dataframe.to_sql(name='tblblacklist', con=engine,
-                                         if_exists='append', index=False)
-            # killing the engine
-            engine.dispose()
-            del engine
+            ins_code = pd_dataframe.loc[0, 'insCode']
+            namad_symbol = 'nmd' + str(ins_code)
+            obj = ObjProperties.Tse.TblBlacklist
+            script = ("insert into tblblacklist (insCode, status) "
+                      "values (%s , %s)"
+                      % (ins_code, "gray"))
+            db_object = DbConnect(obj)
+            query_result = db_object.execute(script, namad_symbol)
             # return saved entries
-            return result
+            return query_result
         except:
-            Log.error_write(index)
-            return None
+            Log.error_write(namad_symbol)
+            return False
         pass
 
 
 class DbConnect:
     def __init__(self,
-                 database,
+                 obj,
                  user="root",
                  password="Unique2213",
                  host="localhost",
                  port=3306,
                  ):
-        self.database = database
+        self.obj = obj
+        self.schema = obj.schema
         self.user = user
         self.password = password
         self.host = host
         self.port = port
         pass
 
-    def select(self, script):
+    def select(self, script, tbl_name="", info_schema=False):
         try:
+            if info_schema is True:
+                self.schema = 'information_schema'
+            else:
+                pass
             conn = mariadb.connect(
                 user=self.user,
                 password=self.password,
                 host=self.host,
                 port=self.port,
-                database=self.database
+                database=self.schema
             )
             cur = conn.cursor()
             cur.execute(script)
@@ -1076,6 +1147,7 @@ class DbConnect:
             conn.close()
             return cur
         except:
+            check_result = repair_check(sys.exc_info()[1], self.obj, tbl_name)
             try:
                 conn.commit()
                 conn.close()
@@ -1083,15 +1155,14 @@ class DbConnect:
                 pass
             except:
                 pass
-            new = str(sys.exc_info()[1])
-            if "doesn't exist" in new:
-                pass
+            if check_result is True:
+                db_object = DbConnect(self.obj)
+                db_object.select(script, tbl_name=tbl_name)
             else:
-                pass
-            Log.error_write('')
-            return []
+                Log.error_write(tbl_name)
+                return []
 
-    def execute(self, script):
+    def execute(self, script, tbl_name=''):
         try:
             conn = mariadb.connect(
                 user=self.user,
@@ -1106,6 +1177,7 @@ class DbConnect:
             conn.close()
             return True
         except:
+            check_result = repair_check(sys.exc_info()[1], self.obj, tbl_name)
             try:
                 conn.commit()
                 conn.close()
@@ -1113,14 +1185,45 @@ class DbConnect:
                 pass
             except:
                 pass
-            new = str(sys.exc_info()[1])
-            if "doesn't exist" in new:
-                pass
+            if check_result is True:
+                db_object = DbConnect(self.obj)
+                db_object.execute(script, tbl_name=tbl_name)
             else:
                 pass
-            Log.error_write('')
+            Log.error_write(tbl_name)
             return False
 
+    def fetchall(self, cur: mariadb.cursors, cur_return=True):
+        try:
+            if isinstance(cur, list) is True:
+                return []
+            else:
+                q_result = cur.fetchall()
+            if q_result is None or len(q_result) < 1:
+                return []
+            elif cur_return:
+                return q_result
+            else:
+                return list(q_result[0])
+        except:
+            Log.error_write('')
+            return []
+
+    def fetchone(self, cur: mariadb.cursors, cur_return=True):
+        try:
+            if isinstance(cur, list) is True:
+                return []
+            else:
+                q_result = cur.fetchone()
+            if q_result is None or len(q_result) < 1:
+                return []
+            elif cur_return:
+                return q_result
+            else:
+                return q_result[0]
+        except:
+            Log.error_write('')
+            return [0]
 
 def session_killer():
     try:
