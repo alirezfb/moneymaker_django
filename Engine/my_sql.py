@@ -230,9 +230,16 @@ class ObjProperties:
             table_create_columns = ("insCode varchar(20) UNIQUE NOT NULL PRIMARY KEY,"
                                     "status varchar(20) NULL")
 
+    class NewDb:
+        def __init__(self):
+            pass
 
-def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, save_limit=10000):
-    for i in range(0, 2):
+        obj_type = 'tse'
+        schema = 'information_schema'
+
+
+def write_tbl(dataframe, tbl_name, obj, existing_dates=None, truncate=False, save_limit=10000):
+    for i in range(0, 3):
         try:
             if dataframe is None:
                 return 0
@@ -243,8 +250,6 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, s
             # extract schema and datefield name from object
             schema = obj.schema
             date_field = obj.date_field
-            # checking if the table exists and create it if not
-            create_table(obj=obj, tbl_name=tbl_name)
             # truncate table if needed
             if truncate is True:
                 truncate_table(tbl_name, obj)
@@ -309,9 +314,10 @@ def write_table(dataframe, tbl_name, obj, existing_dates=None, truncate=False, s
             return row_save_count
         except:
             try:
+                repair_check(sys.exc_info()[0], obj, tbl_name)
                 Log.error_write(tbl_name)
                 error_check = True
-                if i == 0:
+                if i == 1:
                     # when there is a null or nan record in dataframe
                     clone_dataframe = dataframe.copy(deep=False)
                     clone_dataframe.fillna(0)
@@ -330,10 +336,8 @@ def repair_check(exception_string, obj, tbl_name):
         result1, result2 = False, False
         exception_string = str(exception_string)
         if "doesn't exist" in exception_string and "Table" in exception_string:
-            print(8)
             result1 = create_table(obj, tbl_name=tbl_name)
         elif "Unknown database" in exception_string:
-            print(9)
             result2 = create_db(obj)
         else:
             pass
@@ -526,29 +530,15 @@ class Search:
                     pass
             else:
                 pass
+            db_object = DbConnect(obj)
             if df_return is True:
-                engine = create_engine("mariadb+mariadbconnector://root:Unique2213@127.0.0.1:3306"
-                                       "/" + schema)
-                return_object = pd.read_sql(script, engine)
-                engine.dispose()
-                del engine
-                pass
+                return_object = db_object.select(script, tbl_name, df_return=True)
             else:
                 # baz kardane sql va khandane tblnamadhatemp
-                db_object = DbConnect(obj)
                 cur = db_object.select(script, tbl_name)
                 return_object = db_object.fetchall(cur, cur_return=True)
             return return_object
         except:
-            try:
-                if df_return is True:
-                    engine.dispose()
-                    del engine
-                else:
-                    pass
-                pass
-            except:
-                pass
             Log.error_write(Search.index(''))
             return None
         pass
@@ -592,7 +582,7 @@ class Search:
         try:
             schema = obj.schema
             # baz kardane sql va khandane tblnamadhatemp
-            db_object = DbConnect(schema)
+            db_object = DbConnect(obj)
             script = ("SHOW TABLES FROM %s LIKE '%s'"
                       % (schema,
                          table_name))
@@ -712,10 +702,9 @@ def create_db(obj):
         else:
             pass
         # engine
-        db_object = DbConnect(obj)
-        script = (r"CREATE DATABASE " %
-                  schema)
-        print('kir')
+        db_object = DbConnect(ObjProperties.NewDb)
+        script = (r"CREATE DATABASE %s"
+                  % schema)
         # this return a boolean
         query_result = db_object.execute(script)
         return query_result
@@ -1128,9 +1117,13 @@ class DbConnect:
         self.port = port
         pass
 
-    def select(self, script, tbl_name="", info_schema=False):
+    def select(self, script, tbl_name="", info_schema=False, df_return=False):
         try:
-            if info_schema is True:
+            if df_return is True:
+                db_object = DbConnect(self.obj)
+                result = db_object.__df_return(script, tbl_name)
+                return result
+            elif info_schema is True:
                 self.schema = 'information_schema'
             else:
                 pass
@@ -1169,7 +1162,7 @@ class DbConnect:
                 password=self.password,
                 host=self.host,
                 port=self.port,
-                database=self.database
+                database=self.schema
             )
             cur = conn.cursor()
             cur.execute(script)
@@ -1224,6 +1217,32 @@ class DbConnect:
         except:
             Log.error_write('')
             return [0]
+
+    def __df_return(self, script, tbl_name):
+        try:
+            engine_string = ("mariadb+mariadbconnector://" +
+                             self.user + ":" + self.password
+                             + "@" + self.host + ":" + str(self.port) + "/")
+            engine = create_engine(engine_string + self.schema)
+            return_object = pd.read_sql(script, engine)
+            engine.dispose()
+            del engine
+            return return_object
+        except:
+            check_result = repair_check(sys.exc_info()[1], self.obj, tbl_name)
+            try:
+                engine.dispose()
+                del engine
+            except:
+                pass
+            if check_result is True:
+                db_object = DbConnect(self.obj)
+                db_object.select(script, tbl_name=tbl_name, df_return=True)
+            else:
+                Log.error_write(tbl_name)
+                return []
+
+
 
 def session_killer():
     try:

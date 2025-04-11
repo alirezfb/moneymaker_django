@@ -58,7 +58,6 @@ def live_update(index_list, state_check=True):
 
 
 def history_update(index_list):
-    print(index_list)
     start_time_t = datetime.now()
     with ThreadPoolExecutor(max_workers=8) as exc0:
         response_list = exc0.map(tse_test.history_fetcher__, index_list)
@@ -80,11 +79,9 @@ def infinity_run():
         # reading index list
         index_list = my_sql.Read.index(bl_check=True)
         index_list = ['46348559193224090']
-        print(index_list)
         #index_list = index_list[:30]
         # updating last open day and latest day this program had run
         extract_save.market_status()
-        print('1')
         while endless is True:
             # my_sql.LiveTableCreate.price_table()
             # checking if market is open
@@ -112,9 +109,14 @@ def infinity_run():
             if market_state is False:
                 print("MARKET CLOSED")
                 history_update(index_list)
+                print('f1')
+                sleep(100)
                 close_best_limits = extract_save.multi_list_compare(index_list, "sum_close_best_limits_generate",
                                                                     df_return=True, tbl_save=True, rename_sum=False,
                                                                     save_obj=my_sql.ObjProperties.Tse.SumCloseBestLimits)
+
+                print('f2')
+                sleep(10)
                 # temp_index = tse_analize.list_compare_old(index_list, "close_best_limit", "close_ghodrat_kh_ha")
                 temp_index = extract_save.multi_list_compare(index_list, "sum_close_best_limit_read", "close_ghodrat_kh_ha")
                 print(temp_index)

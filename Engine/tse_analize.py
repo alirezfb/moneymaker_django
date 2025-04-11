@@ -555,7 +555,7 @@ class scripts:
         self.only_status = only_status
         self.index_list = index_list
         self.df_return = df_return
-        self.market_state = tse_connect.market_state()
+        self.market_state = tse_connect.MarketState()
         self.today_str = tse_time.today_str()
         self.time = tse_time.latest_ten_minutes()
         self.objects = scripts.objects()
@@ -588,7 +588,7 @@ class scripts:
             self.order_by_word = "ORDER BY"
             self.limit_word = "LIMIT"
             self.like_word = "LIKE"
-            self.market_state = tse_connect.market_state()
+            self.market_state = tse_connect.MarketState()
             self.last_open = str(self.market_state.last_open())
             self.time = tse_time
             self.columns = scripts.columns()

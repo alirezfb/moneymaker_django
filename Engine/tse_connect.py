@@ -318,15 +318,15 @@ class urls:
         pass
 
     headers = [{
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                          'Chrome/109.0.0.0 Safari/537.36',
-        }, {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
-                          'Safari/537.36',
-        }, {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
-                          'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
-        }]
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/109.0.0.0 Safari/537.36',
+    }, {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 '
+                      'Safari/537.36',
+    }, {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
+                      'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
+    }]
 
     class tse_history:
         def __init__(self, index):
@@ -374,7 +374,7 @@ class urls:
         drop_columns_client_types = ['buy_DDD_Volume', 'buy_CountDDD']
 
 
-class DatabaseUpdate:
+class DbUpdate:
     def __init__(self, index: str, live: bool, save_limit: int = 0):
         self.index = index
         self.headers = urls.headers
@@ -399,20 +399,20 @@ class DatabaseUpdate:
                     return None
 
     def fetch_closing_price(self):
-        return DatabaseUpdate.__fetcher(self, self.object.url_closing_price())
+        return DbUpdate.__fetcher(self, self.object.url_closing_price())
 
     def fetch_client_types(self):
-        return DatabaseUpdate.__fetcher(self, self.object.url_client_types())
+        return DbUpdate.__fetcher(self, self.object.url_client_types())
 
     def fetch_best_limits(self):
-        return DatabaseUpdate.__fetcher(self, self.object.url_best_limit())
+        return DbUpdate.__fetcher(self, self.object.url_best_limit())
 
     def dataframe_closing_client(self, closing_response, client_response):
         try:
-            closing_df = DatabaseUpdate.__create_dataframe(self, closing_response, self.object.json_name_closing_price,
-                                                           self.object.drop_columns_closing_price)
-            client_df = DatabaseUpdate.__create_dataframe(self, client_response, self.object.json_name_client_types,
-                                                          self.object.drop_columns_client_types)
+            closing_df = DbUpdate.__create_dataframe(self, closing_response, self.object.json_name_closing_price,
+                                                     self.object.drop_columns_closing_price)
+            client_df = DbUpdate.__create_dataframe(self, client_response, self.object.json_name_client_types,
+                                                    self.object.drop_columns_client_types)
             # return none if empty
             if closing_df is None or client_df is None:
                 return None
@@ -433,9 +433,9 @@ class DatabaseUpdate:
             return None
 
     def dataframe_best_limits(self, url_response):
-        return DatabaseUpdate.__create_dataframe(self, url_response,
-                                                 self.object.json_name_best_limits,
-                                                 self.object.drop_columns_best_limits)
+        return DbUpdate.__create_dataframe(self, url_response,
+                                           self.object.json_name_best_limits,
+                                           self.object.drop_columns_best_limits)
 
     def __create_dataframe(self, url_response, json_name, drop_columns):
         try:
@@ -455,6 +455,66 @@ class DatabaseUpdate:
             # error handling
             my_sql.Log.error_write(self.index)
             return None
+
+
+class DfCreate:
+    def __init__(self, index: str, live: bool, save_limit: int = 0):
+        self.index = index
+        self.save_limit = save_limit
+        if live is True:
+            self.object = urls.tse_live(index)
+        else:
+            self.object = urls.tse_history(index)
+
+    def joint(self, closing_response, client_response):
+        try:
+            closing_df = DfCreate.__create_df(self, closing_response, self.object.json_name_closing_price,
+                                              self.object.drop_columns_closing_price)
+            client_df = DfCreate.__create_df(self, client_response, self.object.json_name_client_types,
+                                             self.object.drop_columns_client_types)
+            # return none if empty
+            if closing_df is None or client_df is None:
+                return None
+            # comparing length of dataframes
+            else:
+                pass
+            return_df = pd.DataFrame()
+            if len(closing_df.index) > len(client_df.index):
+                return_df = pd.concat([closing_df, client_df], axis=1)
+                loop_length = len(closing_df.index) - 1
+            else:
+                return_df = pd.concat([client_df, closing_df], axis=1)
+                loop_length = len(client_df.index) - 1
+            return_df.drop(return_df.index[loop_length - 1:return_df.shape[0]], axis=0, inplace=True)
+            return return_df
+        except:
+            my_sql.Log.error_write(self.index)
+            return None
+
+    def best_limits(self, url_response):
+        return DfCreate.__create_df(self, url_response,
+                                    self.object.json_name_best_limits,
+                                    self.object.drop_columns_best_limits)
+
+    def __create_df(self, url_response, json_name, drop_columns):
+        try:
+            df = pd.json_normalize(url_response.json()[json_name])
+            try:
+                df.drop(drop_columns, axis=1, inplace=True)
+            except:
+                pass
+            if self.save_limit > 0:
+                if len(df.index) < self.save_limit:
+                    loop_length = len(df.index) - 1
+                else:
+                    loop_length = self.save_limit
+                    df.drop(df.index[loop_length - 1:df.shape[0]], axis=0, inplace=True)
+            return df
+        except:
+            # error handling
+            my_sql.Log.error_write(self.index)
+            return None
+
 
 
 def tblnamadha_update():
@@ -685,7 +745,7 @@ def list_int(list):
     return return_list
 
 
-class market_state:
+class MarketState:
     def __init__(self):
         self.url = "https://cdn.tsetmc.com/api/MarketData/GetMarketOverview/0"
         self.headers = [{
@@ -698,8 +758,8 @@ class market_state:
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, '
                           'like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
         }]
-        self.response = market_state.__response(self)
-        self.dataframe = market_state.__create_dataframe(self)
+        self.response = MarketState.__response(self)
+        self.dataframe = MarketState.__create_dataframe(self)
 
     def __response(self):
         for i in range(0, 2):
@@ -712,6 +772,7 @@ class market_state:
                     return None
                 else:
                     sleep(random.randint(0, 2))
+
     def __create_dataframe(self):
         try:
             return pd.json_normalize(self.response.json()["marketOverview"])

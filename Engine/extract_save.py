@@ -34,6 +34,8 @@ def common_member(a, b):
     try:
         a_set = set(a)
         b_set = set(b)
+        print(a)
+        print(b)
 
         # check length
         if len(a_set.intersection(b_set)) > 0:
@@ -119,14 +121,14 @@ class UrlFetcher:
 
 
 def market_status():
-    market_state = tse_connect.market_state()
+    market_state = tse_connect.MarketState()
     data = {'todayDEven': [tse_time.today_int()],
             'marketActivityDEven': [int(market_state.last_open())]}
 
     # Create DataFrame
     df = pd.DataFrame(data)
-    my_sql.write_table(df, "market_status",
-                       my_sql.ObjProperties.Tse.Manager.MarketStatus)
+    my_sql.write_tbl(df, "market_status",
+                     my_sql.ObjProperties.Tse.Manager.MarketStatus)
 
 
 def database_writing_loop_pd(index, pd_df: pandas.DataFrame):
@@ -208,7 +210,7 @@ def best_limit_bulk(dataframe, obj, live: bool = True):
     else:
         tbl_name = "bulk_close_best"
     # saving into database
-    my_sql.write_table(dataframe, tbl_name, obj, truncate=True)
+    my_sql.write_tbl(dataframe, tbl_name, obj, truncate=True)
 
 
 def compare_lists(index_list: list, definition, df_return: bool = False, rename_sum: bool = True, tbl_save=False,
@@ -224,14 +226,17 @@ def compare_lists(index_list: list, definition, df_return: bool = False, rename_
                 else:
                     return_object.remove(index_list[i])
         else:
+            print(index_list)
             dataframe_list = multiprocess_function_list(tse_analize.dataframe_return,
                                                         index_list, definition, rename_sum)
+            print(dataframe_list)
+            sleep(10)
             temp_list = dataframe_list.copy()
             for i in range(0, len(index_list)):
                 if dataframe_list[i] is not None:
                     if tbl_save is True:
                         tbl_name = 'nmd' + str(index_list[i])
-                        my_sql.write_table(dataframe_list[i], tbl_name, save_obj, truncate=True)
+                        my_sql.write_tbl(dataframe_list[i], tbl_name, save_obj, truncate=True)
                     else:
                         pass
                     continue
@@ -247,14 +252,17 @@ def compare_lists(index_list: list, definition, df_return: bool = False, rename_
         return None
 
 
-def multi_list_compare(index_list, *args, df_return: bool = False, rename_sum: bool = True, tbl_save=False,
-                       save_obj=None):
+def multi_list_compare(index_list, *args, df_return: bool = False,
+                       rename_sum: bool = True, tbl_save=False, save_obj=None):
     try:
         multi_list = []
         for definition in args:
+            print(index_list)
+            print(1)
             multi_list.append(
                 compare_lists(index_list, definition, df_return=df_return, rename_sum=rename_sum, tbl_save=tbl_save,
                               save_obj=save_obj))
+            print(2)
         return_list = multi_list[0]
         for i in range(1, len(multi_list)):
             return_list = common_member(return_list, multi_list[i])
